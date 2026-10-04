@@ -31,3 +31,16 @@ export type {
   TeamMemberFeed,
   RevenueTransaction,
 } from './types/technician-view.ts';
+
+/** C 端（农资自营商城，自 E:\repo\zymall 并入）视图类型。 */
+export type {
+  MallProduct,
+  CartItem,
+  SupplyChainStep,
+  TraceVerificationResult,
+  TraceLedgerEntry,
+  ServiceBooking,
+  Agronomist,
+  MallOrderSubmission,
+  WeatherInfo,
+} from './types/mall-view.ts';

@@ -3,6 +3,8 @@ import { PrismaClient } from '@prisma/client';
 import { jsonIn } from './json';
 import { AdminSeed } from './seed-data/admin.seed';
 import { AdminOpsSeed } from './seed-data/admin-operations.seed';
+import { MallSeed } from './seed-data/mall.seed';
+import { seedMall } from './seed-mall';
 import { TechnicianSeed } from './seed-data/technician.seed';
 
 /**
@@ -43,6 +45,7 @@ async function main(): Promise<void> {
   const admin = new AdminSeed();
   const tech = new TechnicianSeed();
   const ops = new AdminOpsSeed();
+  const mall = new MallSeed();
 
   // ---- 幂等：清空（有外键的先删子表）----
   await prisma.serviceOrderPrescriptionDrug.deleteMany();
@@ -403,6 +406,8 @@ async function main(): Promise<void> {
     });
   }
 
+  // C 端商城播种在 ./seed-mall.ts（本文件超 R10 红线后拆出，行为不变）
+  await seedMall(prisma, mall);
   // ---- 播种结果自述（明细，便于与内存版本对账）----
   const counts = {
     Technician: await prisma.technician.count(),
@@ -418,6 +423,10 @@ async function main(): Promise<void> {
     AmoebaStat: await prisma.amoebaStat.count(),
     TeamMemberFeed: await prisma.teamMemberFeed.count(),
     RevenueTransaction: await prisma.revenueTransaction.count(),
+    MallProduct: await prisma.mallProduct.count(),
+    TraceLedgerEntry: await prisma.traceLedgerEntry.count(),
+    ServiceBooking: await prisma.serviceBooking.count(),
+    MallOrder: await prisma.mallOrder.count(),
   };
 
   console.log('[seed] 播种完成:');
