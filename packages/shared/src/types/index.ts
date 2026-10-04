@@ -51,7 +51,13 @@ export interface WorkOrder {
   reportedTime: string;
   waitingMinutes: number;
   requestedAction: string;
-  status: 'pending_dispatch' | 'dispatched' | 'checked_in' | 'prescription_issued' | 'completed' | 'exception';
+  status:
+    | 'pending_dispatch'
+    | 'dispatched'
+    | 'checked_in'
+    | 'prescription_issued'
+    | 'completed'
+    | 'exception';
   statusText: string;
   currentStep: number; // 1 to 5
   assignedTechnician?: {
