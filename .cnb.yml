@@ -1,93 +1,120 @@
 # =============================================================================
 # 华农智服 (hnhall) CI/CD 流水线 — 统一后端自动部署
 # 触发：main 分支 push
-# 流程：环境自检 → 门禁(R1/R2) → 构建后端镜像 → 推送 CNB Registry → SSH 部署 → 健康检查
+# 结构沿用 notebooklm-exam 的验证模式：
+#   门禁(node:22 镜像) → publish(默认环境 + services:docker) → sync/deploy(alpine/git + ssh)
 #
 # 基础设施：https://cnb.cool/yahveyeye/linyuan-infra
-#   - 宿主机 Nginx（HTTPS 入口）由该仓库独立管理，路由变更需向其提 MR（见 nginx/hnhall.conf）
-#   - 部署目录 /opt/hnhall，后端端口 127.0.0.1:38000（共服端口分配，见 ADR-0003）
-# 密钥：复用共享 secrets 仓库的 DEPLOY_SSH_KEY（与 linyuan-infra 一致，无需新建）
-# 生产库：SQLite（卷挂载 /data），不播种种子数据（红线 R4：生产走 Mock 即失败）
+#   - 共享服务（PostgreSQL + Redis）与 Nginx 由该仓库管理；nginx 配置为"项目自助部署"模式：
+#     本仓库自带 nginx/hnhall.conf，sync 阶段调用宿主机上的
+#     /opt/linyuan-infra/deploy-nginx.sh 增量部署为 /etc/nginx/conf.d/40-hnhall.conf
+# 密钥：复用共享 secrets 仓库 yahveyeye/secrets 的 env.yml
+#   （DEPLOY_SSH_KEY + HNHALL_DB_PASSWORD 等，缺失时流水线显式报错）
+# 生产库：共享 PostgreSQL（shared-postgres / 库 hnhall / 账号 hnhall），
+#   不播种种子数据（红线 R4）；建表由容器启动时 prisma migrate deploy 完成
 # =============================================================================
 
 main:
   push:
-    - imports:
+    - name: ci-cd
+      services:
+        - docker
+      imports:
         - https://cnb.cool/yahveyeye/secrets/-/blob/main/env.yml
       env:
         DEPLOY_HOST: "1.14.155.197"
         DEPLOY_USER: "ubuntu"
-        # 部署目录与端口须与 docker-compose.cloud.yml、linyuan-infra 路由一致
         DEPLOY_DIR: "/opt/hnhall"
         API_PORT: "38000"
+        IMAGE: "${CNB_DOCKER_REGISTRY}/yahveyeye/hnhall/api"
       stages:
-        - name: 环境自检（node>=20 + docker 可用）
-          script: node -v && npm -v && docker -v
-
-        # ---------- 质量门禁（COLLABORATION.md §4；technician 红灯期间按 ADR-0002 拆分） ----------
-        - name: 安装依赖
-          script: npm ci --no-audit --no-fund
-
-        - name: 类型门禁（R1）
-          script: npm run lint -w @hnhall/admin -w @hnhall/mall -w @hnhall/server
-
-        - name: 构建（R2）
-          script: npm run build -w @hnhall/admin -w @hnhall/mall -w @hnhall/server
+        # ---------- 质量门禁（COLLABORATION.md §4；technician 红灯期间按 ADR-0002 拆分范围） ----------
+        - name: 门禁
+          jobs:
+            - name: 类型与构建（node 22）
+              image: node:22-bookworm-slim
+              caches:
+                - path: ~/.npm
+              script:
+                - node -v && npm -v
+                - npm ci --no-audit --no-fund
+                - npm run lint -w @hnhall/admin -w @hnhall/mall -w @hnhall/server
+                - npm run build -w @hnhall/admin -w @hnhall/mall -w @hnhall/server
 
         # ---------- 构建并推送后端镜像 ----------
-        - name: 构建后端镜像
-          script: docker build -f server/Dockerfile -t docker.cnb.cool/yahveyeye/hnhall/api:latest .
+        - name: publish
+          jobs:
+            - name: 构建并推送镜像
+              script:
+                - set -euo pipefail
+                - IMAGE_TAG=$(git rev-parse --short HEAD)
+                - echo "${CNB_TOKEN}" | docker login ${CNB_DOCKER_REGISTRY} -u "${CNB_TOKEN_USER_NAME}" --password-stdin
+                - docker build -f server/Dockerfile -t ${IMAGE}:latest -t ${IMAGE}:${IMAGE_TAG} .
+                - docker push ${IMAGE}:latest
+                - docker push ${IMAGE}:${IMAGE_TAG}
 
-        - name: 推送镜像
-          script: docker push docker.cnb.cool/yahveyeye/hnhall/api:latest
+        # ---------- 同步编排 / .env / nginx 自部署 ----------
+        - name: sync
+          jobs:
+            - name: 同步编排与配置
+              image: alpine/git
+              script: |
+                set -euo pipefail
+                apk add --no-cache openssh-client
+                mkdir -p ~/.ssh && chmod 700 ~/.ssh
+                echo "${DEPLOY_SSH_KEY}" | tr -d '\r' > ~/.ssh/id_rsa
+                chmod 600 ~/.ssh/id_rsa
+                ssh-keyscan -H ${DEPLOY_HOST} >> ~/.ssh/known_hosts 2>/dev/null || true
+                if [ -z "$HNHALL_DB_PASSWORD" ]; then
+                  echo "❌ 缺少 HNHALL_DB_PASSWORD：请在 CNB secrets 仓库 yahveyeye/secrets 的 env.yml 中添加"
+                  exit 1
+                fi
+                # 应用目录 + .env（口令来自 secrets，幂等覆盖；部署纪律：禁止手工 SSH 部署）
+                printf 'HNHALL_DB_PASSWORD=%s\n' "$HNHALL_DB_PASSWORD" | \
+                  ssh ${DEPLOY_USER}@${DEPLOY_HOST} "umask 177 && mkdir -p ${DEPLOY_DIR} && cat > ${DEPLOY_DIR}/.env"
+                scp docker-compose.cloud.yml ${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_DIR}/docker-compose.cloud.yml
+                # nginx 自部署（每文件直部署模式：项目自带 conf → conf.d/40-hnhall.conf）
+                scp nginx/hnhall.conf ${DEPLOY_USER}@${DEPLOY_HOST}:/tmp/hnhall.conf
+                ssh ${DEPLOY_USER}@${DEPLOY_HOST} "sudo bash /opt/linyuan-infra/deploy-nginx.sh /tmp/hnhall.conf 40-hnhall.conf"
 
-        # ---------- 部署到宿主机（SSH 密钥登录） ----------
-        - name: 安装 SSH 客户端
-          script: apk add --no-cache openssh-client bash
+        # ---------- 部署与健康检查 ----------
+        - name: deploy
+          jobs:
+            - name: 拉取镜像并启动
+              image: alpine/git
+              script:
+                - set -euo pipefail
+                - apk add --no-cache openssh-client
+                - mkdir -p ~/.ssh && chmod 700 ~/.ssh
+                - echo "${DEPLOY_SSH_KEY}" | tr -d '\r' > ~/.ssh/id_rsa
+                - chmod 600 ~/.ssh/id_rsa
+                - ssh-keyscan -H ${DEPLOY_HOST} >> ~/.ssh/known_hosts 2>/dev/null || true
+                - |
+                  ssh ${DEPLOY_USER}@${DEPLOY_HOST} "
+                    cd ${DEPLOY_DIR} &&
+                    docker compose -f docker-compose.cloud.yml pull &&
+                    docker compose -f docker-compose.cloud.yml up -d --remove-orphans &&
+                    docker image prune -f
+                  "
 
-        - name: 配置 SSH
-          script: |
-            mkdir -p ~/.ssh
-            echo "$DEPLOY_SSH_KEY" | tr -d '\r' > ~/.ssh/id_rsa
-            chmod 600 ~/.ssh/id_rsa
-            ssh-keyscan -H ${DEPLOY_HOST} >> ~/.ssh/known_hosts
-
-        # 部署纪律：一切部署动作流水线化，目录与 .env 也由流水线幂等生成，禁止手工 SSH 部署
-        - name: 生成应用侧 .env（口令来自 CNB secrets，幂等覆盖）
-          script: |
-            if [ -z "$HNHALL_DB_PASSWORD" ]; then
-              echo "❌ 缺少 HNHALL_DB_PASSWORD：请在 CNB secrets 仓库 yahveyeye/secrets 的 env.yml 中添加（与 linyuan-infra shared-infra 同源）"
-              exit 1
-            fi
-            printf 'HNHALL_DB_PASSWORD=%s\n' "$HNHALL_DB_PASSWORD" | ssh ${DEPLOY_USER}@${DEPLOY_HOST} "umask 177 && mkdir -p ${DEPLOY_DIR} && cat > ${DEPLOY_DIR}/.env"
-
-        - name: 同步编排文件
-          script: scp docker-compose.cloud.yml ${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_DIR}/docker-compose.cloud.yml
-
-        - name: 部署 Nginx 配置
-          script: |
-            scp nginx/hnhall.conf ${DEPLOY_USER}@${DEPLOY_HOST}:/tmp/hnhall.conf
-            ssh ${DEPLOY_USER}@${DEPLOY_HOST} "sudo bash /opt/linyuan-infra/deploy-nginx.sh /tmp/hnhall.conf 40-hnhall.conf"
-
-        - name: 拉取镜像并重启
-          script: |
-            ssh ${DEPLOY_USER}@${DEPLOY_HOST} "
-              cd ${DEPLOY_DIR} &&
-              docker compose -f docker-compose.cloud.yml pull &&
-              docker compose -f docker-compose.cloud.yml up -d --remove-orphans &&
-              docker image prune -f
-            "
-
-        - name: 健康检查（/api/health）
-          script: |
-            sleep 10
-            for i in $(seq 1 12); do
-              if ssh ${DEPLOY_USER}@${DEPLOY_HOST} "curl -fsS http://127.0.0.1:${API_PORT}/api/health > /dev/null 2>&1"; then
-                echo "✅ 部署成功：http://127.0.0.1:${API_PORT}/api/health 响应正常"
-                exit 0
-              fi
-              sleep 5
-            done
-            echo "❌ 健康检查未通过，容器日志："
-            ssh ${DEPLOY_USER}@${DEPLOY_HOST} "cd ${DEPLOY_DIR} && docker compose -f docker-compose.cloud.yml logs --tail 50 api"
-            exit 1
+            - name: 健康检查（/api/health）
+              image: alpine/git
+              script:
+                - set -euo pipefail
+                - apk add --no-cache openssh-client curl
+                - mkdir -p ~/.ssh && chmod 700 ~/.ssh
+                - echo "${DEPLOY_SSH_KEY}" | tr -d '\r' > ~/.ssh/id_rsa
+                - chmod 600 ~/.ssh/id_rsa
+                - ssh-keyscan -H ${DEPLOY_HOST} >> ~/.ssh/known_hosts 2>/dev/null || true
+                - |
+                  sleep 10
+                  for i in $(seq 1 12); do
+                    if ssh ${DEPLOY_USER}@${DEPLOY_HOST} "curl -fsS http://127.0.0.1:${API_PORT}/api/health > /dev/null 2>&1"; then
+                      echo "✅ 部署成功：http://127.0.0.1:${API_PORT}/api/health 响应正常"
+                      exit 0
+                    fi
+                    sleep 5
+                  done
+                  echo "❌ 健康检查未通过，容器日志："
+                  ssh ${DEPLOY_USER}@${DEPLOY_HOST} "cd ${DEPLOY_DIR} && docker compose -f docker-compose.cloud.yml logs --tail 50 api"
+                  exit 1
