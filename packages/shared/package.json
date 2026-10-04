@@ -1,0 +1,10 @@
+{
+  "name": "@hnhall/shared",
+  "private": true,
+  "version": "1.0.0",
+  "description": "跨端共享的领域类型真源（企业后台 / 技师端 / 后端共用）",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}
