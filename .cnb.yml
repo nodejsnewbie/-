@@ -38,6 +38,8 @@ main:
               script:
                 - node -v && npm -v
                 - npm ci --no-audit --no-fund
+                # CI 与本机不同：@prisma/client 的 postinstall 不会自动找 server/prisma 下的 schema，必须显式生成
+                - npx prisma generate --schema=server/prisma/schema.prisma
                 - npm run lint -w @hnhall/admin -w @hnhall/mall -w @hnhall/server
                 - npm run build -w @hnhall/admin -w @hnhall/mall -w @hnhall/server
 
