@@ -1,0 +1,29 @@
+# 版本控制与本地杂物
+.git
+.gitignore
+.vscode
+.baton
+.dsh
+*.log
+.DS_Store
+package-lock.json.stray-backup
+
+# 依赖（镜像内重新 npm ci）
+node_modules
+**/node_modules
+
+# 构建产物（镜像内重新构建）
+dist
+**/dist
+**/*.tsbuildinfo
+
+# 本地数据库与环境（生产凭镜像卷 + 宿主机配置，不入镜像）
+**/*.db
+**/*.db-journal
+.env*
+!.env.example
+
+# 与后端镜像无关的目录（缩小构建上下文；apps 仅含源码，体积小，保留给 npm ci）
+docs
+scripts
+services
