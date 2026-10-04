@@ -64,7 +64,7 @@
 - **当前：三套旧 Express Mock（后台 / 技师端 / C 端商城）已全部迁入 NestJS 模块，`server/src/legacy/` 已删除**
   - 按**业务域**分模块——企业后台与技师端是同一业务域的两个视图，因此同模块内用两个 controller 区分端
   - `modules/dashboard · order · technician · qualification · supply-chain · amoeba · system · mall`
-  - 数据已落 Prisma（开发期 SQLite）：仓储在 `src/database/repositories/`，种子数据 `src/database/seed-data/`（原型 Mock 逐字迁入），`node dist/database/seed.js` 幂等复位
+  - 数据已落 Prisma（**PostgreSQL**，2026-10-04 起 ADR-0004：开发 = 仓库根 `docker-compose.dev.yml`，生产 = linyuan-infra 共享 PG `shared-postgres`）：仓储在 `src/database/repositories/`，种子数据 `src/database/seed-data/`（原型 Mock 逐字迁入），`node dist/database/seed.js` 幂等复位
 - **迁移的验收方式（必须有证据）**：迁移前后抓同一批响应**逐字节比对**
   - 夹具：`server/test/api-baseline.json`（后台 + 技师端）、`server/test/api-baseline-mall-*.json`（C 端商城，迁移前/后各一份）
   - 脚本：`scripts/capture-api-baseline.mjs`（`core` 默认 / `mall` profile）→ `scripts/compare-api-baseline.mjs`
@@ -79,11 +79,11 @@
 | 项       | 取值                                                                                                                                                                                                                                   |
 | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | ORM      | Prisma 6（`server/prisma/schema.prisma`）                                                                                                                                                                                              |
-| 开发环境 | **SQLite**（`server/prisma/dev.db`，零依赖，clone 即可跑）                                                                                                                                                                             |
+| 开发环境 | **PostgreSQL 16**（本机 `docker-compose.dev.yml`，`hnhall:hnhall_dev@127.0.0.1:5432/hnhall`；`server/.env` 已指向）                                                                                                                              |
 | 生产目标 | PostgreSQL —— 切换需改 `provider` → 重跑迁移 → 重新 generate client；仓储层代码不动，**但这不叫「改个环境变量」**                                                                                                                      |
 | 当前模型 | **v0 临时版，源自原型数据形状**（后台 / 技师端 / 商城域共 17 张视图模型），待客户确认需求后修订。约定：金额存「分」+ mapper 边界还原、枚举 String 存 + `@hnhall/shared` 字面量约束、列表顺序 `orderKey` 显式维护、数组/视图嵌套走 Json |
 
-**⚠️ Prisma + SQLite 的实测约束（写模型前必读，已实测）**
+**⚠️ Prisma + SQLite 的实测约束（🗄️ 历史存档——2026-10-04 起已全栈 PG 化（ADR-0004），本节仅留档；约定延续部分见 `schema.prisma` 头注释）**
 
 - **`enum` 可以用，但本项目不用**。实测 `prisma db push` 在 SQLite 上**成功**，落成的 DDL 是普通 `TEXT NOT NULL`——**没有任何取值约束**（`Json` 落成 `JSONB`，同样靠客户端而非数据库校验）。
   不用的真正理由是：**PG 上 Prisma 会建真正的 enum 类型**，两个 provider 的 DDL 因此分叉，将来切库更麻烦。加上项目既有规范就是「枚举用 snake_case 字符串字面量联合类型」，所以统一 String 存、约束留在 `@hnhall/shared`。
@@ -104,7 +104,7 @@
 | **ESLint 10 flat config**（`npm run lint:eslint`） | 代码质量（未用变量、显式 any、hooks 规则）；分工：**格式归 Prettier，类型归 tsc** | ✅ 已接入（`eslint.config.js` + `.prettierrc.json`；`react-hooks/set-state-in-effect` 因保留原型行为降级为 warn，接入测试框架后重构） |
 | **Prettier**（`npm run format` / `format:check`） | 格式化（整仓已做一次基线格式化） | ✅ 已接入 |
 | **pytest**（`services/ai`） | AI 层 REST 契约测试（不依赖真实 LLM 密钥） | ✅ 5 项通过 |
-| Vitest（单元）+ Playwright（E2E）+ MSW（接口 Mock）+ CNB 流水线 | 前端与接口测试 | ❌ 未接入（接口层暂以回归基线 + smoke 脚本把关） |
+| Vitest（单元）+ Playwright（E2E）+ MSW（接口 Mock）+ CNB 流水线 | 前端与接口测试 | 🔶 部分接入（2026-10-04 起 CNB 部署流水线已配置：main push → lint/build 门禁 → 后端镜像 → 自动部署至 linyuan-infra 共服，见 `docs/DEPLOYMENT.md` / ADR-0003；测试框架仍未接入，接口层暂以回归基线 + smoke 脚本把关） |
 
 **Python 工具链（services/ai）**：用 **uv** 管理虚拟环境与依赖（`uv venv` + `uv pip install -e ".[dev]"`）。
 ⚠️ 实测本机 **pip 在 Python 3.14 上会静默死循环**（零输出烧 CPU 数十分钟），换 uv 秒装——不要再用 pip 装本项目依赖。
@@ -165,6 +165,10 @@ npm start            # 生产模式启动后端（需先 build）
 - **测试 / QA**：测试策略与用例、验收执行（**拥有测试失败判定权，可否决合并**）
 - **运维 / SRE**：环境、发布、回滚、监控
 - **AI 编码代理**：按本规范实施，**无红线豁免权**；失败须如实上报，不得伪造通过证据
+
+### 一人项目适配（2026-10-04 起，ADR-0001）
+
+本项目为**一人开发 + AI 代理协作**：上表多人角色由开发者一人兼任，AI 代理承担主力实施。角色职责的落实方式（自评审清单替代人工评审、本地门禁替代 CI、ADR 书面豁免、缺陷先补用例再修、代理接管/交接/单写者协议）见 [`docs/COLLABORATION.md`](docs/COLLABORATION.md)。适配只改编流程仪式，**红线 R1–R10 与"AI 代理无豁免权"不放宽**；本节与框架冲突时以本文件为准。
 
 ## 红线规则（测试失败标准）
 
@@ -281,7 +285,7 @@ hnhall/
 │   └── shared/                  # 跨端领域类型真源（@hnhall/shared）
 │       └── src/{index.ts, types/{index,technician-view,mall-view}.ts}
 ├── server/                      # 统一后端（NestJS）
-│   ├── prisma/                          # Prisma schema（v0 原型形状，17 张模型）+ 迁移 + 本地 dev.db
+│   ├── prisma/                          # Prisma schema（v0 原型形状，17 张模型）+ PG 迁移基线（20261004134813_init）
 │   ├── test/                            # 迁移回归夹具（api-baseline.json + mall 两份）
 │   ├── tsconfig.json · nest-cli.json · package.json · .env.example
 │   └── src/
@@ -347,7 +351,7 @@ docs/                    # 0_index / 1_common / 2_pc_* / 9_data_dict / ui/demos
 2. **地图定位本期不做，字段要留**：`location` / `gridCode` / `coverageRadius` 只加不改；但**派单界面上的距离与到达时间本期没有真实数据来源，只能以「示意」标注显示，且不得作为派单决策、绩效或结算依据**（经第 3 步确认）
 3. **一物一码是监管要求**：溯源节点必须真实产生、可追溯来源，禁止为时间线好看而补造
 4. **脱敏无例外**：手机号、身份证、许可证号在界面/截图/日志/测试数据中同样适用
-5. **后端数据是种子 Mock（Prisma/SQLite）**：数据可持久但全部来自 `src/database/seed-data/` 的原型假数据（`node dist/database/seed.js` 幂等复位）；任何「验证通过」的结论必须注明「Mock 环境」，不得据此宣布需求完成
+5. **后端数据是种子 Mock（Prisma/PostgreSQL，开发与生产统一）**：数据可持久但全部来自 `src/database/seed-data/` 的原型假数据（`node dist/database/seed.js` 幂等复位，**仅开发环境播种**——生产播种即违反 R4）；任何「验证通过」的结论必须注明「Mock 环境」，不得据此宣布需求完成
 6. **空 `catch` 会掩盖线上故障**：新代码必须显式提示错误
 7. **超大文件已清理**：admin 四个超标视图（TechnicianManagement 1191 行等）已于 2026-10-04 按 Tab/面板拆入 `features/<域>/`（纯结构性搬移，行为不变，双基线回归 0 不一致）。新增文件仍受 R10 约束
 8. **不要随意新增依赖**；新增前先确认它真被引用（本项目已清理 5 个零引用依赖）
@@ -459,7 +463,7 @@ docs/                    # 0_index / 1_common / 2_pc_* / 9_data_dict / ui/demos
 - **最高优先：需求待与客户确认**——第 3 步的四份文档全部建立在开发方判断之上。按 [`discovery-questions.md`](docs/requirements/discovery-questions.md) 的**第一层 7 题**逐层推进（微信沟通、讨论阶段）；第一层答复到位后才进第二层。**客户确认前，第 4 步 PRD 不得定稿。**
 - **`apps/technician`（Taro 小程序）待建**：参照 `E:\repo\technicalend` 的 H5 版移植
 - **`apps/mall`（C 端）现为 H5 形态**：是否 Taro 小程序化待定；并入时登记的存量缺陷（乐观 fallback、badgeColor、未脱敏手机号等）见「C 端商城并入记录」
-- ~~PostgreSQL 未安装~~ → **方案已定**：开发用 **SQLite + Prisma**（`server/prisma/dev.db`，连通性已实测），生产目标 PostgreSQL，**本地不安装 PG**。切 PG 时要改 `provider` → 重跑迁移 → 重新 generate client
+- ~~PostgreSQL 未安装~~ → **已达成（ADR-0004，2026-10-04）**：开发与生产统一 **PostgreSQL**——开发用仓库根 `docker-compose.dev.yml`（本地 PG 16），生产用 linyuan-infra 共享 PG（`shared-postgres`，一库一账号，无宿主机端口）。旧 SQLite 迁移基线已删除，全新 PG 基线 `20261004134813_init` 已建。共享实例规范见 linyuan-infra `docs/SHARED-INFRA.md`
 - **技师端 H5 版带着已被否定的虚构字段**，移植时必须清理：`ServiceOrder.distanceKm` / `gpsCoords`（无定位能力）、`AmoebaStat.prescriptionDividend` / `teamReferralDividend` / `equityPreDraw`（分红仅来自服务收入）、`incentiveMultiplier`（档位系数待定）
 - **技师端 H5 有 1 个文件超红线**：`PrescriptionBuilderView.tsx` 517 行（R10 上限 500）——移植时按功能拆分
 - 第 6 步顺序倒置的处置（追认 or 返工）——见 PROJECT-SPEC 待决策项

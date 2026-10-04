@@ -21,3 +21,6 @@ coverage/
 __pycache__/
 *.pyc
 .pytest_cache/
+
+# baton 交接记录（本地草稿，不入库）
+.baton/
