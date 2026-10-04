@@ -12,36 +12,36 @@
 //   这些逻辑留在 service 层，等确认后重写。
 //
 // ── provider ────────────────────────────────────────────────────────────────
-// 开发：SQLite（零依赖，clone 即可跑）  ·  生产目标：PostgreSQL
-// 切库要做：改 provider → 重跑迁移 → 重新 generate client。仓储层代码不动，
-//          但**这不叫「改个环境变量」**。
+// 开发与生产统一 **PostgreSQL**（ADR-0004，2026-10-04）：开发用仓库根
+// docker-compose.dev.yml 的本地 PG，生产用 linyuan-infra 共享 PG（一库一账号）。
+// 本次切换做了全新迁移基线：旧 SQLite 迁移已删除（原型 Mock 数据可弃，无搬运价值）。
 //
-// ── 写模型时的约定（已实测，勿凭印象改）────────────────────────────────────
-//   1. **枚举用 String 存，不用 Prisma `enum`**。
-//      实测 enum 在 SQLite 上是能建的（db push 成功），但落成普通 `TEXT NOT NULL`，
-//      **没有任何取值约束**；而 PG 上 Prisma 会建真正的 enum 类型 → 两个 provider 的 DDL
-//      分叉。为切库平滑，统一 String + `@hnhall/shared` 的 TS 字符串字面量联合类型。
-//      每个枚举列的合法取值写在字段上方的注释里。
+// ── 写模型时的约定（勿凭印象改）────────────────────────────────────────────
+//   1. **枚举用 String 存，不用 Prisma `enum`**（项目约定延续）。
+//      切 PG 后原生 enum 已可用，但既有约定已全面落地、与 `@hnhall/shared` 的
+//      TS 字符串字面量联合类型绑定；是否改用原生 enum 属业务模型修订，
+//      等需求确认后随真模型一并评估。每个枚举列的合法取值写在字段上方注释里。
 //   2. **金额一律 Int 存「分」**（红线 R7），列名以 `Cents` 结尾，仓储边界负责 ÷100。
 //      ⚠️ 例外：**Json 快照内的金额不转换**（见 `costBreakdown`）——深度改写 JSON blob
 //      只会引入新的失真点，而 blob 本身是「下单时刻的视图快照」，等真模型落地会重做。
 //      **参与结算运算的金额一定不在 Json 里**（处方行项目已抽成独立表就是为此）。
-//   3. `Json` 在 SQLite 上落成 `JSONB`，可用；只用于**视图态嵌套结构**。
-//   4. 禁止 `@db.*` 原生类型注解与 PG 专有数组类型（切库会炸）。
-//   5. 主键统一 String（原型里的 id 直接沿用），避免 SQLite 与 PG 的自增语义差异。
+//   3. `Json` 在 PG 上落成原生 `jsonb`；只用于**视图态嵌套结构**。
+//   4. v0 阶段继续**不使用** `@db.*` 原生类型注解与 PG 数组类型（与既有基线保持一致；
+//      确需引入属模型修订，走 ADR）。
+//   5. 主键统一 String（原型里的 id 直接沿用，业务语义主键）。
 //   6. **列表顺序用 `orderKey Int` 显式维护**，不依赖插入顺序或 id 排序——
 //      原型里有 `unshift`（前插）语义，必须能确定性复现。
 //      前插 = `min(orderKey) - 1`；种子数据用 0,1,2,…
 //
-// ⚠️ 探针请在 `server/prisma/` 目录内做：SQLite 连接器无法在 %TEMP% 建库
-//    （会报 `unable to open database file`，容易被误判成类型不支持——已踩过）。
+// （历史教训留档，SQLite 时代）探针必须在 `server/prisma/` 目录内做：SQLite 连接器
+//    无法在 %TEMP% 建库（报 `unable to open database file`，曾被误判成类型不支持）。
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 

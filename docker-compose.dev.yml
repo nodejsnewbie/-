@@ -1,0 +1,29 @@
+# =============================================================================
+# 本地开发数据库（PostgreSQL 16）—— 服务于 server/ 工作区
+# 启动：docker compose -f docker-compose.dev.yml up -d
+# 对应连接串（server/.env）：postgres://hnhall:hnhall_dev@127.0.0.1:5432/hnhall
+# 生产 = linyuan-infra 共享 PostgreSQL（shared-postgres），见 docs/DEPLOYMENT.md
+# =============================================================================
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: hnhall_dev_pg
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5432:5432"
+    environment:
+      POSTGRES_USER: hnhall
+      POSTGRES_PASSWORD: hnhall_dev
+      POSTGRES_DB: hnhall
+      TZ: Asia/Shanghai
+    volumes:
+      - hnhall_dev_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hnhall -d hnhall"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  hnhall_dev_pgdata:
