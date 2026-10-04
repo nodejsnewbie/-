@@ -6,3 +6,18 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# 技能真源：.dsh/skills/（入库）
+
+# TypeScript 增量编译缓存（NestJS 构建产物内）
+*.tsbuildinfo
+
+# Prisma 本地 SQLite 库（开发用，不入库）
+*.db
+*.db-journal
+
+# Python（services/ai）
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/

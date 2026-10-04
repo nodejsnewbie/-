@@ -19,7 +19,8 @@
     "dev:mall": "npm run dev -w @hnhall/mall",
     "lint:eslint": "eslint .",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "dev:ai": "node scripts/dev-ai.mjs"
   },
   "engines": {
     "node": ">=20"
