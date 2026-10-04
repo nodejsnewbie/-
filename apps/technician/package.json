@@ -1,0 +1,34 @@
+{
+  "name": "@hnhall/technician",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "技师端 · 农艺师合伙人工作台（Taro + React 微信小程序）",
+  "scripts": {
+    "dev": "taro build --type weapp --watch",
+    "build": "taro build --type weapp",
+    "clean": "node -e \"import('node:fs').then(({rmSync})=>rmSync('dist',{recursive:true,force:true}))\"",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hnhall/shared": "*",
+    "@tarojs/components": "4.3.0",
+    "@tarojs/plugin-framework-react": "4.3.0",
+    "@tarojs/plugin-platform-weapp": "4.3.0",
+    "@tarojs/react": "4.3.0",
+    "@tarojs/runtime": "4.3.0",
+    "@tarojs/taro": "4.3.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwindcss": "^3.4.17",
+    "weapp-tailwindcss": "3.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "@tarojs/cli": "4.3.0",
+    "@tarojs/webpack5-runner": "4.3.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "typescript": "^6.0.2"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "华农智服 - 农艺师合伙人工作台",
+  "description": "专为乡村基层农艺师与植保合伙人打造的移动工作台，涵盖智能抢单、田间现场取样实拍、病虫害精准诊断、合规电子处方开立与阿米巴激励分红。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

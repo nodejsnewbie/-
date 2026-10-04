@@ -12,6 +12,7 @@
     "dev": "npm run dev -w @hnhall/server",
     "dev:admin": "npm run dev -w @hnhall/admin",
     "dev:server": "npm run dev -w @hnhall/server",
+    "dev:technician": "npm run dev -w @hnhall/technician",
     "build": "npm run build --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "clean": "npm run clean --workspaces --if-present",
