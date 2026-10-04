@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Sidebar } from './components/Sidebar.tsx';
-import { Header } from './components/Header.tsx';
-import { Footer } from './components/Footer.tsx';
-import { QualificationAuditDrawer } from './components/QualificationAuditDrawer.tsx';
-import { DashboardOverview } from './views/DashboardOverview.tsx';
-import { OrderDispatch } from './views/OrderDispatch.tsx';
-import { TechnicianManagement } from './views/TechnicianManagement.tsx';
-import { SupplyChainAndTraceability } from './views/SupplyChainAndTraceability.tsx';
-import { AmoebaSettlement } from './views/AmoebaSettlement.tsx';
-import { SystemSettings } from './views/SystemSettings.tsx';
+import { Sidebar } from './layout/Sidebar.tsx';
+import { Header } from './layout/Header.tsx';
+import { Footer } from './layout/Footer.tsx';
+import { NotificationsModal, ToastStack } from './components/Feedback.tsx';
+import type { ToastMessage } from './components/Feedback.tsx';
+import { QualificationAuditDrawer } from '../features/qualification/components/QualificationAuditDrawer.tsx';
+import { DashboardOverview } from '../features/dashboard/index.tsx';
+import { OrderDispatch } from '../features/order-dispatch/index.tsx';
+import { TechnicianManagement } from '../features/technician/index.tsx';
+import { SupplyChainAndTraceability } from '../features/supply-chain/index.tsx';
+import { AmoebaSettlement } from '../features/amoeba-settlement/index.tsx';
+import { SystemSettings } from '../features/system-settings/index.tsx';
 
 import type {
   Technician,
@@ -17,7 +19,7 @@ import type {
   SupplyProduct,
   AmoebaSettlement as AmoebaSettlementType,
   FulfillmentEvent,
-} from './types/index.ts';
+} from '@hnhall/shared';
 
 import {
   fetchStats,
@@ -35,14 +37,12 @@ import {
   batchBankSettle,
   singleBankSettle,
   syncMinistryData,
-} from './services/api.ts';
+} from '../services/api.ts';
 
-interface ToastMessage {
-  id: string;
-  text: string;
-  type: 'success' | 'warning' | 'info';
-}
-
+/**
+ * 应用装配：全局状态 + 数据加载 + 布局（Layout 在 ./layout，反馈组件在 ./components）。
+ * 业务视图在 ../features/<域>/，每域一个入口文件。
+ */
 export default function App() {
   const [currentTab, setCurrentTab] = useState<string>('technician-management');
   const [currentRegion, setCurrentRegion] = useState<string>('华中大区 · 洞庭湖粮油果木示范带');
@@ -70,14 +70,15 @@ export default function App() {
   const loadData = useCallback(async () => {
     try {
       setIsLoading(true);
-      const [statsData, ordersData, techsData, auditsData, supplyData, amoebaData] = await Promise.all([
-        fetchStats(),
-        fetchOrders(),
-        fetchTechnicians(),
-        fetchAudits(),
-        fetchSupplyChain(),
-        fetchAmoebaSettlements(),
-      ]);
+      const [statsData, ordersData, techsData, auditsData, supplyData, amoebaData] =
+        await Promise.all([
+          fetchStats(),
+          fetchOrders(),
+          fetchTechnicians(),
+          fetchAudits(),
+          fetchSupplyChain(),
+          fetchAmoebaSettlements(),
+        ]);
 
       setOrders(ordersData.orders);
       setTechnicians(techsData.technicians);
@@ -113,8 +114,8 @@ export default function App() {
                 statusText: '已派工 · 正在赶赴现场',
                 currentStep: 2,
               }
-            : o
-        )
+            : o,
+        ),
       );
     }
   };
@@ -125,9 +126,7 @@ export default function App() {
       setOrders((prev) => prev.map((o) => (o.id === orderId ? res.order : o)));
       showToast(`工单 ${orderId} 履约节点已变更为第 ${step} 步`, 'info');
     } catch {
-      setOrders((prev) =>
-        prev.map((o) => (o.id === orderId ? { ...o, currentStep: step } : o))
-      );
+      setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, currentStep: step } : o)));
     }
   };
 
@@ -144,7 +143,10 @@ export default function App() {
   const handleRejectAudit = async (auditId: string, action: 'reject' | 'revision') => {
     try {
       await rejectAudit(auditId, action);
-      showToast(action === 'revision' ? '已退回补正材料，已向申请人发送修改短信。' : '已驳回资质申请。', 'info');
+      showToast(
+        action === 'revision' ? '已退回补正材料，已向申请人发送修改短信。' : '已驳回资质申请。',
+        'info',
+      );
       loadData();
     } catch {
       showToast('操作完成', 'info');
@@ -164,7 +166,10 @@ export default function App() {
   const handleGenerateCodes = async (count: number) => {
     try {
       await generateBatchCodes(count);
-      showToast(`已成功批量生成 ${count.toLocaleString()} 个带防伪水印国家农药电子监管码！`, 'success');
+      showToast(
+        `已成功批量生成 ${count.toLocaleString()} 个带防伪水印国家农药电子监管码！`,
+        'success',
+      );
     } catch {
       showToast('赋码批量生成向导已启动', 'info');
     }
@@ -173,7 +178,10 @@ export default function App() {
   const handleSyncMinistry = async () => {
     try {
       await syncMinistryData();
-      showToast('国家农业农村部数据双向校验同步成功！全部 32 款农资与 386 名技师数据一致。', 'success');
+      showToast(
+        '国家农业农村部数据双向校验同步成功！全部 32 款农资与 386 名技师数据一致。',
+        'success',
+      );
     } catch {
       showToast('部级平台数据已实时同步！', 'success');
     }
@@ -182,7 +190,10 @@ export default function App() {
   const handleBatchBankSettle = async () => {
     try {
       await batchBankSettle();
-      showToast('已通过中国农业银行财资云下发批量代发指令！预计 15 分钟内资金流水落地到账。', 'success');
+      showToast(
+        '已通过中国农业银行财资云下发批量代发指令！预计 15 分钟内资金流水落地到账。',
+        'success',
+      );
       loadData();
     } catch {
       showToast('批量代发指令已下发至农业银行专户', 'success');
@@ -202,12 +213,36 @@ export default function App() {
   const handleSearch = (q: string) => {
     if (!q) return;
     const term = q.toLowerCase();
-    if (term.includes('ord') || term.includes('工单') || term.includes('稻') || term.includes('柑橘')) {
+    if (
+      term.includes('ord') ||
+      term.includes('工单') ||
+      term.includes('稻') ||
+      term.includes('柑橘')
+    ) {
       setCurrentTab('order-dispatch-and-scheduling');
-    } else if (term.includes('周') || term.includes('刘') || term.includes('陈') || term.includes('彭') || term.includes('技师')) {
+    } else if (
+      term.includes('周') ||
+      term.includes('刘') ||
+      term.includes('陈') ||
+      term.includes('彭') ||
+      term.includes('技师')
+    ) {
       setCurrentTab('technician-management');
-    } else if (term.includes('pd') || term.includes('药') || term.includes('批次') || term.includes('hn-')) {
+    } else if (
+      term.includes('pd') ||
+      term.includes('药') ||
+      term.includes('批次') ||
+      term.includes('hn-')
+    ) {
       setCurrentTab('supply-chain-and-traceability');
+    }
+  };
+
+  const openTabOrDrawer = (tab: string) => {
+    if (tab === 'qualification-and-license-review') {
+      setIsAuditDrawerOpen(true);
+    } else {
+      setCurrentTab(tab);
     }
   };
 
@@ -216,13 +251,7 @@ export default function App() {
       {/* Fixed Left Sidebar */}
       <Sidebar
         currentTab={currentTab}
-        onSelectTab={(tab) => {
-          if (tab === 'qualification-and-license-review') {
-            setIsAuditDrawerOpen(true);
-          } else {
-            setCurrentTab(tab);
-          }
-        }}
+        onSelectTab={openTabOrDrawer}
         pendingAuditCount={audits.filter((a) => a.status === 'pending').length || 14}
       />
 
@@ -257,13 +286,7 @@ export default function App() {
                 <DashboardOverview
                   currentRegion={currentRegion}
                   onSelectRegion={setCurrentRegion}
-                  onNavigateTab={(tab) => {
-                    if (tab === 'qualification-and-license-review') {
-                      setIsAuditDrawerOpen(true);
-                    } else {
-                      setCurrentTab(tab);
-                    }
-                  }}
+                  onNavigateTab={openTabOrDrawer}
                   fulfillmentEvents={fulfillmentEvents}
                   onDispatchOrder={handleDispatchOrder}
                   onShowToast={showToast}
@@ -307,9 +330,7 @@ export default function App() {
                 />
               )}
 
-              {currentTab === 'system-settings' && (
-                <SystemSettings onShowToast={showToast} />
-              )}
+              {currentTab === 'system-settings' && <SystemSettings onShowToast={showToast} />}
             </>
           )}
         </main>
@@ -329,115 +350,24 @@ export default function App() {
 
       {/* Notifications Drawer Modal */}
       {showNotificationsModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4"
-          onClick={() => setShowNotificationsModal(false)}
-        >
-          <div
-            className="bg-surface-container-lowest rounded-2xl max-w-md w-full p-5 shadow-2xl relative border border-surface-container"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between pb-3 border-b border-surface-container">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary text-[22px]">notifications</span>
-                <h3 className="font-bold text-primary text-[16px]">系统突发预警与调度通知</h3>
-              </div>
-              <button
-                className="p-1 rounded-lg hover:bg-surface-container text-on-surface-variant"
-                onClick={() => setShowNotificationsModal(false)}
-              >
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
-
-            <div className="mt-3 space-y-2.5 text-[12px]">
-              <div className="p-3 rounded-xl bg-error-container/20 border border-error-container/40 space-y-1">
-                <div className="flex items-center justify-between font-bold text-error">
-                  <span className="flex items-center gap-1">
-                    <span className="material-symbols-outlined text-[16px]">crisis_alert</span>
-                    窜货异常拦截 (常德鼎城区)
-                  </span>
-                  <span>10分钟前</span>
-                </div>
-                <p className="text-on-surface">
-                  批次 HN-20240218-B (40% 咪鲜胺) 在非授权区域发生异常频发扫码，建议立即执行电子监管码冻结。
-                </p>
-                <button
-                  onClick={() => {
-                    setCurrentTab('supply-chain-and-traceability');
-                    setShowNotificationsModal(false);
-                  }}
-                  className="text-primary font-bold hover:underline"
-                >
-                  前往处置工单 →
-                </button>
-              </div>
-
-              <div className="p-3 rounded-xl bg-tertiary-fixed/30 border border-tertiary-fixed space-y-1">
-                <div className="flex items-center justify-between font-bold text-tertiary">
-                  <span className="flex items-center gap-1">
-                    <span className="material-symbols-outlined text-[16px]">pending_actions</span>
-                    新入网技师资质待审
-                  </span>
-                  <span>25分钟前</span>
-                </div>
-                <p className="text-on-surface">
-                  申请人 陈志平 (APP-2024-8902) 提交了益阳市赫山区法定农药经营许可证原件，OCR已比对完成。
-                </p>
-                <button
-                  onClick={() => {
-                    setIsAuditDrawerOpen(true);
-                    setShowNotificationsModal(false);
-                  }}
-                  className="text-primary font-bold hover:underline"
-                >
-                  开启资质审核工作台 →
-                </button>
-              </div>
-            </div>
-
-            <div className="mt-4 pt-2 border-t border-surface-container flex justify-end">
-              <button
-                className="px-4 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface text-[12px] font-semibold"
-                onClick={() => setShowNotificationsModal(false)}
-              >
-                已全部标记已读
-              </button>
-            </div>
-          </div>
-        </div>
+        <NotificationsModal
+          onClose={() => setShowNotificationsModal(false)}
+          onGoToSupplyChain={() => {
+            setCurrentTab('supply-chain-and-traceability');
+            setShowNotificationsModal(false);
+          }}
+          onOpenAuditDrawer={() => {
+            setIsAuditDrawerOpen(true);
+            setShowNotificationsModal(false);
+          }}
+        />
       )}
 
       {/* Floating Toast Alerts Stack */}
-      <div className="fixed bottom-6 right-6 z-60 flex flex-col gap-2 pointer-events-none max-w-md">
-        {toasts.map((toast) => (
-          <div
-            key={toast.id}
-            className={`pointer-events-auto px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 text-[13px] border animate-in slide-in-from-bottom-3 duration-200 ${
-              toast.type === 'success'
-                ? 'bg-primary-container text-on-primary border-primary-fixed/30'
-                : toast.type === 'warning'
-                ? 'bg-error-container text-on-error-container border-error/20'
-                : 'bg-surface-container-highest text-on-surface border-surface-container'
-            }`}
-          >
-            <span className="material-symbols-outlined text-[18px]">
-              {toast.type === 'success'
-                ? 'check_circle'
-                : toast.type === 'warning'
-                ? 'warning'
-                : 'info'}
-            </span>
-            <span className="flex-1 font-medium">{toast.text}</span>
-            <button
-              onClick={() => setToasts((prev) => prev.filter((t) => t.id !== toast.id))}
-              className="opacity-70 hover:opacity-100 text-[14px]"
-            >
-              ✕
-            </button>
-          </div>
-        ))}
-      </div>
+      <ToastStack
+        toasts={toasts}
+        onDismiss={(id) => setToasts((prev) => prev.filter((t) => t.id !== id))}
+      />
     </div>
   );
 }

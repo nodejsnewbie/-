@@ -5,7 +5,7 @@ import type {
   SupplyProduct,
   AmoebaSettlement,
   FulfillmentEvent,
-} from '../types/index.ts';
+} from '@hnhall/shared';
 
 export async function fetchStats() {
   const res = await fetch('/api/stats');
@@ -33,13 +33,23 @@ export async function fetchStats() {
       farmerGoodReviewPct: number;
     };
     pestAlerts: Array<{ name: string; percentage: number; level: string }>;
-    serviceModeBreakdown: Array<{ title: string; percentage: number; orders: number; desc: string }>;
+    serviceModeBreakdown: Array<{
+      title: string;
+      percentage: number;
+      orders: number;
+      desc: string;
+    }>;
     fulfillmentEvents: FulfillmentEvent[];
     lastSyncTime: string;
   }>;
 }
 
-export async function fetchOrders(params?: { status?: string; grid?: string; category?: string; search?: string }) {
+export async function fetchOrders(params?: {
+  status?: string;
+  grid?: string;
+  category?: string;
+  search?: string;
+}) {
   const query = new URLSearchParams();
   if (params?.status) query.set('status', params.status);
   if (params?.grid) query.set('grid', params.grid);
@@ -71,7 +81,11 @@ export async function updateOrderStep(orderId: string, step: number) {
   return res.json() as Promise<{ success: boolean; order: WorkOrder }>;
 }
 
-export async function fetchTechnicians(params?: { tier?: string; filter?: string; search?: string }) {
+export async function fetchTechnicians(params?: {
+  tier?: string;
+  filter?: string;
+  search?: string;
+}) {
   const query = new URLSearchParams();
   if (params?.tier) query.set('tier', params.tier);
   if (params?.filter) query.set('filter', params.filter);
@@ -88,7 +102,10 @@ export async function fetchTechnicians(params?: { tier?: string; filter?: string
   }>;
 }
 
-export async function updateTechnicianStatus(id: string, data: { dispatchStatus?: string; amoebaCoefficient?: number }) {
+export async function updateTechnicianStatus(
+  id: string,
+  data: { dispatchStatus?: string; amoebaCoefficient?: number },
+) {
   const res = await fetch(`/api/technicians/${id}/status`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -181,7 +198,12 @@ export async function batchBankSettle() {
     headers: { 'Content-Type': 'application/json' },
   });
   if (!res.ok) throw new Error('银行代发请求失败');
-  return res.json() as Promise<{ success: boolean; message: string; settledCount: number; netPaid: number }>;
+  return res.json() as Promise<{
+    success: boolean;
+    message: string;
+    settledCount: number;
+    netPaid: number;
+  }>;
 }
 
 export async function singleBankSettle(id: string) {

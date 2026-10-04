@@ -22,7 +22,9 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({ onShowToast }) =
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-1.5 text-on-surface-variant text-[12px]">
-            <span className="inline-flex items-center text-primary font-semibold">企业合规管控中心</span>
+            <span className="inline-flex items-center text-primary font-semibold">
+              企业合规管控中心
+            </span>
             <span className="text-outline">/</span>
             <span>系统参数与权限治理</span>
           </div>
@@ -152,7 +154,9 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({ onShowToast }) =
         <div className="bg-surface-container-lowest rounded-xl p-6 shadow-xs border border-surface-container space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-surface-container">
             <div>
-              <h3 className="font-bold text-primary text-[16px]">阿米巴合伙人分成与导师系数规则引擎</h3>
+              <h3 className="font-bold text-primary text-[16px]">
+                阿米巴合伙人分成与导师系数规则引擎
+              </h3>
               <p className="text-[12px] text-on-surface-variant">
                 设置各级合伙人的产值提成系数与导师带徒专项每亩补贴。
               </p>
@@ -220,7 +224,9 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({ onShowToast }) =
           <div className="flex items-center justify-between pb-3 border-b border-surface-container">
             <div>
               <h3 className="font-bold text-primary text-[16px]">管理运营角色与权限矩阵 (RBAC)</h3>
-              <p className="text-[12px] text-on-surface-variant">保障农资配药处方核销与资金出纳安全分权。</p>
+              <p className="text-[12px] text-on-surface-variant">
+                保障农资配药处方核销与资金出纳安全分权。
+              </p>
             </div>
           </div>
 
@@ -228,7 +234,9 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({ onShowToast }) =
             <div className="py-3 flex items-center justify-between">
               <div>
                 <div className="font-bold text-on-surface">超级管理员 (运营总控中心)</div>
-                <div className="text-[11px] text-on-surface-variant">拥有全网订单指派、资质审批、批量代发与系统配置最高权限</div>
+                <div className="text-[11px] text-on-surface-variant">
+                  拥有全网订单指派、资质审批、批量代发与系统配置最高权限
+                </div>
               </div>
               <span className="px-2.5 py-1 rounded bg-primary-container text-on-primary text-[11px] font-bold">
                 完全控制 (Full Control)
@@ -237,7 +245,9 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({ onShowToast }) =
             <div className="py-3 flex items-center justify-between">
               <div>
                 <div className="font-bold text-on-surface">资质与合规审核专员</div>
-                <div className="text-[11px] text-on-surface-variant">专司农药经营许可证AI比对、真伪验真、驳回及电子档案建立</div>
+                <div className="text-[11px] text-on-surface-variant">
+                  专司农药经营许可证AI比对、真伪验真、驳回及电子档案建立
+                </div>
               </div>
               <span className="px-2.5 py-1 rounded bg-surface-container text-on-surface-variant text-[11px] font-bold">
                 审核专权 (Audit Admin)
@@ -246,7 +256,9 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({ onShowToast }) =
             <div className="py-3 flex items-center justify-between">
               <div>
                 <div className="font-bold text-on-surface">订单调度中心值班专员</div>
-                <div className="text-[11px] text-on-surface-variant">负责突发虫害/气象预警转派、无人机航线跟踪及农户电话沟通</div>
+                <div className="text-[11px] text-on-surface-variant">
+                  负责突发虫害/气象预警转派、无人机航线跟踪及农户电话沟通
+                </div>
               </div>
               <span className="px-2.5 py-1 rounded bg-surface-container text-on-surface-variant text-[11px] font-bold">
                 调度专权 (Dispatch)

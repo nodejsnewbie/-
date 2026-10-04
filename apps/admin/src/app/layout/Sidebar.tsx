@@ -6,7 +6,11 @@ interface SidebarProps {
   pendingAuditCount?: number;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab, pendingAuditCount = 14 }) => {
+export const Sidebar: React.FC<SidebarProps> = ({
+  currentTab,
+  onSelectTab,
+  pendingAuditCount = 14,
+}) => {
   const navItems = [
     {
       id: 'dashboard-overview',
@@ -58,7 +62,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab, pendi
             src="https://lh3.googleusercontent.com/aida/AEtjO1WIwHA3AoDJSjdzg2rG3BZGWi4OpNPFsS8hs1KT8yG2xqwg_ujB5QLAvQUJCW0tFRwUZRCx-RFqMnNnwmpMdYYpakL37xQYLEGKb9p-FNeq9vmhR07H60Id0ZSrYABZalIsHbQaIhKl-VtppEEk6m2T-XRS3UufI3RgNOc0M7DxH8gGkVjXGu7CzrJKa67PUriC04mBC8VmOL_783dXcn-6Lymp7tYnubsWyyuzDU1dxorO-FNGryrqwqE"
           />
           <div className="flex flex-col">
-            <span className="font-bold text-primary text-[15px] leading-tight tracking-tight">华农智服</span>
+            <span className="font-bold text-primary text-[15px] leading-tight tracking-tight">
+              华农智服
+            </span>
             <span className="text-[12px] text-on-surface-variant">企业综合管理平台</span>
           </div>
         </div>
@@ -83,7 +89,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab, pendi
                   type="button"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="material-symbols-outlined text-[20px] shrink-0">{item.icon}</span>
+                    <span className="material-symbols-outlined text-[20px] shrink-0">
+                      {item.icon}
+                    </span>
                     <span className="truncate">{item.label}</span>
                   </div>
                   {item.badge && (

@@ -1,6 +1,5 @@
 {
   "name": "华农智服 - 企业综合管理平台",
   "description": "国家农业农村部合规标准联网端，全网一线植保机手实名建档、法定农药经营许可证全量核验、订单智能调度、一物一码农资溯源与阿米巴合伙人分红结算中心。",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "requestFramePermissions": []
 }

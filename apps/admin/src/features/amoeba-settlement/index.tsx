@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { AmoebaSettlement as AmoebaSettlementType } from '../types/index.ts';
+import type { AmoebaSettlement as AmoebaSettlementType } from '@hnhall/shared';
 
 interface AmoebaSettlementProps {
   settlements: AmoebaSettlementType[];
@@ -28,8 +28,8 @@ export const AmoebaSettlement: React.FC<AmoebaSettlementProps> = ({
       `本次将发起 42 位阿米巴合伙人本月佣金总计 ¥${grossTotal.toLocaleString('zh-CN', {
         minimumFractionDigits: 2,
       })} 的银行直联代发结算（已依法代扣个税 ¥${taxTotal.toFixed(2)}，实付 ¥${netTotal.toFixed(
-        2
-      )}），是否确认提交中国农业银行专户？`
+        2,
+      )}），是否确认提交中国农业银行专户？`,
     );
 
     if (!confirmed) return;
@@ -39,7 +39,7 @@ export const AmoebaSettlement: React.FC<AmoebaSettlementProps> = ({
       await onBatchSettle();
       onShowToast(
         '已通过专线向中国农业银行财资云下发合规批量代发指令！正在进行资金流水自动承兑，预计 15 分钟内落地到账。',
-        'success'
+        'success',
       );
     } catch {
       onShowToast('结算指令通讯超时，请稍后重试', 'warning');
@@ -51,7 +51,10 @@ export const AmoebaSettlement: React.FC<AmoebaSettlementProps> = ({
   const handleSingleSettleClick = async (item: AmoebaSettlementType) => {
     try {
       await onSingleSettle(item.id);
-      onShowToast(`已为 ${item.partnerName} 单独生成本月银企直联清算凭单！资金已下发直连账户。`, 'success');
+      onShowToast(
+        `已为 ${item.partnerName} 单独生成本月银企直联清算凭单！资金已下发直连账户。`,
+        'success',
+      );
       setSelectedPartner(null);
     } catch {
       onShowToast('单笔结算失败', 'warning');
@@ -114,7 +117,9 @@ export const AmoebaSettlement: React.FC<AmoebaSettlementProps> = ({
               <span className="material-symbols-outlined text-[26px]">account_balance_wallet</span>
             </div>
             <div>
-              <div className="text-[12px] text-on-surface-variant font-medium">当期应发合伙人总额</div>
+              <div className="text-[12px] text-on-surface-variant font-medium">
+                当期应发合伙人总额
+              </div>
               <div className="text-[20px] font-extrabold text-on-surface font-mono">
                 ¥{grossTotal.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
               </div>
@@ -140,7 +145,9 @@ export const AmoebaSettlement: React.FC<AmoebaSettlementProps> = ({
               <span className="material-symbols-outlined text-[26px]">credit_score</span>
             </div>
             <div>
-              <div className="text-[12px] text-on-surface-variant font-medium">银行清算实付总金额</div>
+              <div className="text-[12px] text-on-surface-variant font-medium">
+                银行清算实付总金额
+              </div>
               <div className="text-[20px] font-extrabold text-secondary font-mono">
                 ¥{netTotal.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
               </div>
@@ -180,7 +187,9 @@ export const AmoebaSettlement: React.FC<AmoebaSettlementProps> = ({
                             {item.partnerLevel}
                           </span>
                         </div>
-                        <div className="text-on-surface-variant font-mono text-[11px]">{item.partnerCode}</div>
+                        <div className="text-on-surface-variant font-mono text-[11px]">
+                          {item.partnerCode}
+                        </div>
                       </div>
                     </div>
                   </td>
@@ -249,7 +258,9 @@ export const AmoebaSettlement: React.FC<AmoebaSettlementProps> = ({
           >
             <div className="flex items-center justify-between border-b border-surface-container pb-3">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-tertiary text-[24px]">account_balance_wallet</span>
+                <span className="material-symbols-outlined text-tertiary text-[24px]">
+                  account_balance_wallet
+                </span>
                 <h3 className="text-[17px] font-bold text-on-surface">阿米巴合伙人佣金明细账单</h3>
               </div>
               <button
@@ -263,11 +274,17 @@ export const AmoebaSettlement: React.FC<AmoebaSettlementProps> = ({
             <div className="mt-4 space-y-4 text-[13px]">
               <div className="flex items-center justify-between p-3.5 rounded-xl bg-surface-container-low border border-surface-container">
                 <div>
-                  <div className="text-[18px] font-bold text-primary">{selectedPartner.partnerName}</div>
-                  <div className="text-tertiary text-[12px] font-bold mt-0.5">{selectedPartner.partnerLevel}</div>
+                  <div className="text-[18px] font-bold text-primary">
+                    {selectedPartner.partnerName}
+                  </div>
+                  <div className="text-tertiary text-[12px] font-bold mt-0.5">
+                    {selectedPartner.partnerLevel}
+                  </div>
                 </div>
                 <div className="text-right">
-                  <span className="text-on-surface-variant text-[11px] block">实发净额 (已代扣税)</span>
+                  <span className="text-on-surface-variant text-[11px] block">
+                    实发净额 (已代扣税)
+                  </span>
                   <span className="text-[22px] font-extrabold text-secondary font-mono">
                     ¥{selectedPartner.netPay.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
                   </span>
@@ -276,7 +293,9 @@ export const AmoebaSettlement: React.FC<AmoebaSettlementProps> = ({
 
               <div className="divide-y divide-surface-container rounded-xl bg-surface-container-low p-3.5 text-[12px] border border-surface-container">
                 <div className="flex justify-between py-2">
-                  <span className="text-on-surface-variant">1. 上门飞防/植保作业提成 (按亩核算)</span>
+                  <span className="text-on-surface-variant">
+                    1. 上门飞防/植保作业提成 (按亩核算)
+                  </span>
                   <span className="font-mono font-medium text-on-surface">
                     ¥{selectedPartner.serviceFee.toFixed(2)}
                   </span>
@@ -288,7 +307,9 @@ export const AmoebaSettlement: React.FC<AmoebaSettlementProps> = ({
                   </span>
                 </div>
                 <div className="flex justify-between py-2">
-                  <span className="text-on-surface-variant">3. 徒弟裂变技术指导奖金 (网格团队)</span>
+                  <span className="text-on-surface-variant">
+                    3. 徒弟裂变技术指导奖金 (网格团队)
+                  </span>
                   <span className="font-mono font-medium text-on-surface">
                     ¥{selectedPartner.mentorshipBonus.toFixed(2)}
                   </span>
@@ -390,7 +411,10 @@ export const AmoebaSettlement: React.FC<AmoebaSettlementProps> = ({
               <button
                 className="px-5 py-2 rounded-lg bg-primary hover:bg-primary-container text-on-primary text-[13px] font-bold shadow-xs"
                 onClick={() => {
-                  onShowToast('《阿米巴合伙人月度完税申报明细表 (国税标准格式).xlsx》已导出成功！', 'success');
+                  onShowToast(
+                    '《阿米巴合伙人月度完税申报明细表 (国税标准格式).xlsx》已导出成功！',
+                    'success',
+                  );
                   setShowTaxExportModal(false);
                 }}
               >
