@@ -131,6 +131,7 @@
 npm run dev:server   # 启动统一后端（NestJS，端口 3000，watch 模式）
 npm run dev:admin    # 启动企业后台前端（Vite，端口 5173，/api 代理到 3000）
 npm run dev:mall     # 启动 C 端商城前端（Vite，端口 5174，/api 代理到 3000）
+npm run dev:technician  # 技师端 Taro watch 编译（产物用微信开发者工具打开 apps/technician/dist）
 npm run dev:ai       # 启动 AI 智能代理层（uvicorn，端口 8100；需先配置 services/ai/.env）
 npm run dev          # = dev:server
 npm run lint         # 所有工作区 tsc --noEmit（类型门禁，R1）← 提交前必跑
@@ -321,7 +322,7 @@ hnhall/
 ```text
 apps/admin/src/          # 已按上图 feature 化（views/ 已删除）；shared/ 待有共享 hooks/utils 时再建
 
-apps/technician/         # 技师端 Taro 小程序（待建）
+apps/technician/         # 技师端 Taro 小程序（🔶 脚手架已建，视图层适配进行中）
 
 server/src/modules/      # NestJS 业务模块（✅ controller → service → 仓储 三层；数据已落 Prisma 仓储）
 └── dashboard/ order/ technician/ qualification/ supply-chain/ amoeba/ system/ mall/
@@ -453,6 +454,23 @@ docs/                    # 0_index / 1_common / 2_pc_* / 9_data_dict / ui/demos
 | **AI 智能代理层** | 新建 `services/ai`（Python）：FastAPI 标准化 REST（`/api/v1` + OpenAPI 3 + 统一响应包）+ **LangChain 智能代理**——把平台统一后端的 6 个 REST 接口包装成代理工具（商品检索/详情、溯源验真、施药气象、预约查询/创建）；LLM 走 OpenAI 兼容协议（可指向豆包/智谱/通义），**未配置密钥时 chat 返回 503 并如实提示，不做假回答（R4）**；代理系统提示词约束其不做诊断结论、不代替持证农艺师开方（R5） | pytest 5 项契约测试全过（不依赖密钥）；端到端联调：health 报告平台可达、tools 列出 6 工具、工具实调平台接口返回真实种子数据 |
 
 **AI 层边界**：代理只做「查与约」，**不做诊断结论、不承诺疗效、不参与结算**；所有数据必须来自平台工具，查不到如实说。`services/ai` 不在 npm workspaces 内（独立 Python 工具链，用 uv 管理——pip 在 Python 3.14 会静默死循环，勿用）。
+
+### 技师端 Taro 脚手架记录（2026-10-05）
+
+外部会话完成脚手架：Taro 4.3（React 18）+ weapp-tailwindcss，视图自 `E:epo	echnicalend` 移入 `apps/technician/src`；入口 `src/app.tsx` → `pages/index` → 容器 `TechnicianWorkspace.tsx`（已用 `@tarojs/components` 改写），类型经 `src/types.ts` 转出 `@hnhall/shared`。
+
+本会话打通构建链，修复项（按 R2 验收：`npx taro build --type weapp` 成功产出 `dist/`）：
+
+| 修复 | 说明 |
+|---|---|
+| tsconfig | `moduleResolution: node10` 与 `baseUrl` 已被 TS6/7 移除（AGENTS.md 登记过的坑）→ `bundler`；paths 钉死本工作区 React 18（根提升的是 19，避免 TS2786 ×1010） |
+| babel | 补 `babel.config.js`（`babel-preset-taro` + ts）与 babel 7 全家桶（新版 preset 会带进 @babel/core 8，与 Taro 的 peer ^7 冲突） |
+| taro-loader | 显式进 devDependencies 并落到根（与被提升的 webpack5-runner 相邻，否则 loader 解析失败） |
+| tailwind 提升位 | **根目录 tailwindcss 锚定为 v3**（admin/mall 的 v4 由 npm 嵌进各自工作区）——否则 weapp 工具链 postinstall/构建解析到 v4 崩溃；admin/mall 构建已复验无回归 |
+| 配置收敛 | 删除 weapp-tw init 生成的重复 ESM 配置；`postcss.config.cjs` 用字符串键（老版 postcss-load-config 不认函数键） |
+| R10/规范 | `PrescriptionBuilderView` 519 行拆出 `PrescriptionBuilderParts`（415+144）；删除孤儿 H5 入口 `main.tsx`；补 `.d.ts` 资源声明与 CJS 配置的 ESLint 语境 |
+
+⚠️ 安装依赖：根目录 `npm install` 现已可全量执行（提升位锚定后 weapp postinstall 不再撞 v4）。
 
 ### 已知遗留（不阻塞当前步骤）
 
