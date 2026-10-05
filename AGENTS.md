@@ -322,7 +322,7 @@ hnhall/
 ```text
 apps/admin/src/          # 已按上图 feature 化（views/ 已删除）；shared/ 待有共享 hooks/utils 时再建
 
-apps/technician/         # 技师端 Taro 小程序（🔶 脚手架已建，视图层适配进行中）
+apps/technician/         # 技师端 Taro 小程序（🔶 构建与接口接线完成，真机验证待做）
 
 server/src/modules/      # NestJS 业务模块（✅ controller → service → 仓储 三层；数据已落 Prisma 仓储）
 └── dashboard/ order/ technician/ qualification/ supply-chain/ amoeba/ system/ mall/
@@ -471,6 +471,8 @@ docs/                    # 0_index / 1_common / 2_pc_* / 9_data_dict / ui/demos
 | R10/规范 | `PrescriptionBuilderView` 519 行拆出 `PrescriptionBuilderParts`（415+144）；删除孤儿 H5 入口 `main.tsx`；补 `.d.ts` 资源声明与 CJS 配置的 ESLint 语境 |
 
 ⚠️ 安装依赖：根目录 `npm install` 现已可全量执行（提升位锚定后 weapp postinstall 不再撞 v4）。
+
+**第二轮（2026-10-05，接口接线与运行期适配）**：`services/api.ts` 重写为 `Taro.request`（小程序无 fetch）并**修正基址 `/api` → `/api/tech`**（原写法会打到企业后台同前缀路由）；签名板改用 Canvas 2d 节点（SelectorQuery + 触摸坐标 + canvasToTempFilePath）；拍照上传改 `Taro.chooseImage`；剪贴板/语音播报等浏览器 API 换 Taro 等价物或诚实降级；扫码弹窗接入 `/pesticides` 与 `/pesticides/:code` 验真（失败回退本地目录并提示）。验收：tsc / eslint / `taro build --type weapp` 全绿。
 
 ### 已知遗留（不阻塞当前步骤）
 

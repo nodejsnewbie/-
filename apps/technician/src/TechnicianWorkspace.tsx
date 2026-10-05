@@ -1,3 +1,4 @@
+import Taro from '@tarojs/taro';
 import { showAlert } from './utils/platform';
 import { Button, Text, View } from '@tarojs/components';
 import React, { useState, useEffect } from 'react';
@@ -327,7 +328,7 @@ export default function App() {
               onGoToPrescription={handleGoToPrescription}
               onViewImage={(url, label) => setLightboxData({ url, title: label })}
               onCopyAddress={(addr) => {
-                navigator.clipboard?.writeText(addr);
+                Taro.setClipboardData({ data: addr });
                 showAlert('已复制地块地址至剪贴板！');
               }}
               onCallFarmer={(phone, name) => {

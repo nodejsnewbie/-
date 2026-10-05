@@ -87,7 +87,7 @@ export const PrescriptionBuilderView: React.FC<PrescriptionBuilderViewProps> = (
 
   // Elderly voice broadcast synthesizer
   const handlePlayVoice = () => {
-    if ('speechSynthesis' in window) {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       if (isSpeaking) {
         window.speechSynthesis.cancel();
         setIsSpeaking(false);
@@ -205,8 +205,8 @@ export const PrescriptionBuilderView: React.FC<PrescriptionBuilderViewProps> = (
               <Textarea
                 value={advice}
                 onChange={(e) => {
-                  setAdvice(e.target.value);
-                  onUpdateOrder({ ...order, agronomicAdvice: e.target.value });
+                  setAdvice(e.detail.value);
+                  onUpdateOrder({ ...order, agronomicAdvice: e.detail.value });
                 }}
                 className="w-full bg-transparent text-on-surface text-xs focus:outline-none resize-none leading-relaxed"
                 placeholder="输入田间水肥调控与施药作业注意事项..."

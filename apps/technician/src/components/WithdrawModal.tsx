@@ -111,7 +111,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
               <Input
                 type="number"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={(e) => setAmount(e.detail.value)}
                 className="w-full bg-transparent text-2xl font-extrabold text-on-surface font-mono focus:outline-none"
               />
               <Button

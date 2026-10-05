@@ -1,4 +1,5 @@
 import { Button, Image, Input, Text, View } from '@tarojs/components';
+import Taro from '@tarojs/taro';
 import React, { useState } from 'react';
 import { FieldEvidencePhoto } from '../types';
 
@@ -63,24 +64,24 @@ export const PhotoCaptureModal: React.FC<PhotoCaptureModalProps> = ({
     }, 300);
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const result = event.target?.result as string;
+  const handleAlbumPick = () => {
+    Taro.chooseImage({
+      count: 1,
+      sizeType: ['compressed'],
+      sourceType: ['album', 'camera'],
+      success: (res) => {
         const newPhoto: FieldEvidencePhoto = {
           id: `ev-${Date.now()}`,
-          url: result,
+          // 小程序临时路径可直接用于本端 Image 展示；持久化需经服务端上传（待接）
+          url: res.tempFilePaths[0],
           label: customLabel || '现场实拍',
           time: timeStr,
           location: '长沙县安沙镇黄旗村',
         };
         onCapture(newPhoto);
         onClose();
-      };
-      reader.readAsDataURL(file);
-    }
+      },
+    });
   };
 
   return (
@@ -158,7 +159,7 @@ export const PhotoCaptureModal: React.FC<PhotoCaptureModalProps> = ({
             <Input
               type="text"
               value={customLabel}
-              onChange={(e) => setCustomLabel(e.target.value)}
+              onChange={(e) => setCustomLabel(e.detail.value)}
               className="flex-1 bg-surface-container-lowest border border-surface-container-high rounded-md px-2.5 py-1 text-xs text-on-surface focus:outline-none focus:border-primary"
               placeholder="如：安沙镇·病斑微距"
             />
@@ -167,16 +168,10 @@ export const PhotoCaptureModal: React.FC<PhotoCaptureModalProps> = ({
 
         {/* Action Buttons */}
         <View className="p-3 bg-surface-container-lowest flex items-center justify-between gap-3 border-t border-surface-container">
-          <View className="flex items-center gap-1 px-3 py-2 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-bold cursor-pointer">
+          <Button onClick={handleAlbumPick} className="flex items-center gap-1 px-3 py-2 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-bold cursor-pointer after:border-none">
             <Text className="material-symbols-outlined text-[16px]">upload_file</Text>
             <Text>相册上传</Text>
-            <Input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleFileUpload}
-            />
-          </View>
+          </Button>
 
           <Button
             onClick={handleSnap}

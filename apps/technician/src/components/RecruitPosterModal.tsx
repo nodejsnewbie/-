@@ -1,5 +1,6 @@
 import { showAlert } from '../utils/platform';
 import { Button, Image, Text, View } from '@tarojs/components';
+import Taro from '@tarojs/taro';
 import React, { useState } from 'react';
 import { TechnicianProfile } from '../types';
 
@@ -22,7 +23,8 @@ export const RecruitPosterModal: React.FC<RecruitPosterModalProps> = ({
   const inviteLink = `https://huanong-zhifu.com/join?ref=${inviteCode}`;
 
   const handleCopyLink = () => {
-    navigator.clipboard?.writeText(inviteLink);
+    Taro.setClipboardData({ data: inviteLink });
+    showAlert('邀请链接已复制，快去粘贴给需要的伙伴吧！');
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

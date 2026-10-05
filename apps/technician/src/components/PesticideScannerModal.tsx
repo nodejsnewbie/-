@@ -1,5 +1,7 @@
 import { Button, Image, Input, Text, View } from '@tarojs/components';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { api } from '../services/api';
+import { showAlert } from '../utils/platform';
 import { PrescriptionDrug } from '../types';
 import { AVAILABLE_PESTICIDE_CATALOG } from '../data/mockData';
 
@@ -17,11 +19,50 @@ export const PesticideScannerModal: React.FC<PesticideScannerModalProps> = ({
   const [activeTab, setActiveTab] = useState<'scanner' | 'catalog'>('scanner');
   const [searchQuery, setSearchQuery] = useState('');
   const [scannedResult, setScannedResult] = useState<PrescriptionDrug | null>(null);
+  const [catalog, setCatalog] = useState<PrescriptionDrug[]>(AVAILABLE_PESTICIDE_CATALOG);
+  const [isVerifying, setIsVerifying] = useState(false);
+
+  // 打开弹窗即拉取自营药库真目录（失败时保留 mock 兜底并提示）
+  useEffect(() => {
+    if (!isOpen) return;
+    api.getPesticides()
+      .then((list) => {
+        if (list?.length) setCatalog(list);
+      })
+      .catch((e) => {
+        console.warn('[药库目录] 接口失败，使用本地目录兜底', e);
+        showAlert('药库目录加载失败，当前展示本地缓存目录');
+      });
+  }, [isOpen]);
+
+  // 检索走真接口（350ms 防抖）
+  useEffect(() => {
+    if (!isOpen) return;
+    const timer = setTimeout(() => {
+      api.getPesticides(searchQuery || undefined)
+        .then((list) => {
+          if (list) setCatalog(list);
+        })
+        .catch(() => {
+          /* 保留上一次目录；输入本地过滤仍可用 */
+        });
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [searchQuery, isOpen]);
 
   if (!isOpen) return null;
 
   const handleSimulateScan = (drug: PrescriptionDrug) => {
-    setScannedResult(drug);
+    // 走后端扫码验真接口（/api/tech/pesticides/:code），失败时回退目录条目本身
+    setIsVerifying(true);
+    api
+      .scanBarcode(drug.code)
+      .then((verified) => setScannedResult(verified ?? drug))
+      .catch((e) => {
+        console.warn('[扫码验真] 接口失败，使用目录条目兜底', e);
+        setScannedResult(drug);
+      })
+      .finally(() => setIsVerifying(false));
   };
 
   const handleConfirmAdd = (drug: PrescriptionDrug) => {
@@ -30,7 +71,7 @@ export const PesticideScannerModal: React.FC<PesticideScannerModalProps> = ({
     onClose();
   };
 
-  const filteredCatalog = AVAILABLE_PESTICIDE_CATALOG.filter(
+  const filteredCatalog = catalog.filter(
     (d) =>
       d.name.includes(searchQuery) ||
       d.code.includes(searchQuery) ||
@@ -104,7 +145,7 @@ export const PesticideScannerModal: React.FC<PesticideScannerModalProps> = ({
                 快速模拟扫描药剂条码:
               </Text>
               <View className="grid grid-cols-2 gap-1.5 mt-1.5">
-                {AVAILABLE_PESTICIDE_CATALOG.map((item) => (
+                {catalog.map((item) => (
                   <Button
                     key={item.id}
                     onClick={() => handleSimulateScan(item)}
@@ -152,7 +193,7 @@ export const PesticideScannerModal: React.FC<PesticideScannerModalProps> = ({
                 </View>
 
                 <Button
-                  onClick={() => handleConfirmAdd(scannedResult)}
+                  onClick={() => !isVerifying && handleConfirmAdd(scannedResult)}
                   className="w-full h-9 bg-primary hover:bg-primary-container text-white text-xs font-bold rounded-lg flex items-center justify-center gap-1 shadow-xs cursor-pointer active:scale-95 transition-all"
                 >
                   <Text className="material-symbols-outlined text-[16px]">add_shopping_cart</Text>
@@ -171,7 +212,7 @@ export const PesticideScannerModal: React.FC<PesticideScannerModalProps> = ({
               <Input
                 type="text"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => setSearchQuery(e.detail.value)}
                 placeholder="搜索药剂通用名、杀菌剂、杀虫剂..."
                 className="w-full bg-surface-container-low pl-9 pr-3 py-2 rounded-xl text-xs text-on-surface border border-surface-container-high focus:outline-none focus:border-primary"
               />
