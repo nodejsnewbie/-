@@ -71,10 +71,11 @@ main:
                   echo "❌ 缺少 HNHALL_DB_PASSWORD：请在 CNB secrets 仓库 yahveyeye/secrets 的 env.yml 中添加"
                   exit 1
                 fi
-                # 应用目录 + .env（口令来自 secrets，幂等覆盖；部署纪律：禁止手工 SSH 部署）
+                # 应用目录 + .env（口令来自 secrets，幂等覆盖；/opt 归 root，经 sudo 写入。部署纪律：禁止手工 SSH 部署）
                 printf 'HNHALL_DB_PASSWORD=%s\n' "$HNHALL_DB_PASSWORD" | \
-                  ssh ${DEPLOY_USER}@${DEPLOY_HOST} "umask 177 && mkdir -p ${DEPLOY_DIR} && cat > ${DEPLOY_DIR}/.env"
-                scp docker-compose.cloud.yml ${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_DIR}/docker-compose.cloud.yml
+                  ssh ${DEPLOY_USER}@${DEPLOY_HOST} "sudo mkdir -p ${DEPLOY_DIR} && sudo install -m 640 -o root -g ubuntu /dev/stdin ${DEPLOY_DIR}/.env"
+                scp docker-compose.cloud.yml ${DEPLOY_USER}@${DEPLOY_HOST}:/tmp/hnhall-compose.yml
+                ssh ${DEPLOY_USER}@${DEPLOY_HOST} "sudo install -m 644 /tmp/hnhall-compose.yml ${DEPLOY_DIR}/docker-compose.cloud.yml && rm -f /tmp/hnhall-compose.yml"
                 # nginx 自部署（每文件直部署模式：项目自带 conf → conf.d/40-hnhall.conf）
                 scp nginx/hnhall.conf ${DEPLOY_USER}@${DEPLOY_HOST}:/tmp/hnhall.conf
                 ssh ${DEPLOY_USER}@${DEPLOY_HOST} "sudo bash /opt/linyuan-infra/deploy-nginx.sh /tmp/hnhall.conf 40-hnhall.conf"
