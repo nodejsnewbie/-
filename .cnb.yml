@@ -76,7 +76,11 @@ main:
                   ssh ${DEPLOY_USER}@${DEPLOY_HOST} "sudo mkdir -p ${DEPLOY_DIR} && sudo install -m 640 -o root -g ubuntu /dev/stdin ${DEPLOY_DIR}/.env"
                 scp docker-compose.cloud.yml ${DEPLOY_USER}@${DEPLOY_HOST}:/tmp/hnhall-compose.yml
                 ssh ${DEPLOY_USER}@${DEPLOY_HOST} "sudo install -m 644 /tmp/hnhall-compose.yml ${DEPLOY_DIR}/docker-compose.cloud.yml && rm -f /tmp/hnhall-compose.yml"
-                # nginx 自部署（每文件直部署模式：项目自带 conf → conf.d/40-hnhall.conf）
+                # 管理端前端静态资源打包上传（门禁阶段已 vite build 到 apps/admin/dist）
+                tar -C apps/admin/dist -czf /tmp/hnhall-frontend.tar.gz .
+                scp /tmp/hnhall-frontend.tar.gz ${DEPLOY_USER}@${DEPLOY_HOST}:/tmp/hnhall-frontend.tar.gz
+                ssh ${DEPLOY_USER}@${DEPLOY_HOST} "sudo rm -rf ${DEPLOY_DIR}/frontend && sudo mkdir -p ${DEPLOY_DIR}/frontend && sudo tar -xzf /tmp/hnhall-frontend.tar.gz -C ${DEPLOY_DIR}/frontend && rm -f /tmp/hnhall-frontend.tar.gz"
+                # nginx 自部署（每文件直部署模式：项目自带 conf → conf.d/40-hnhall.conf；/ = 前端静态，/api/ 反代后端）
                 scp nginx/hnhall.conf ${DEPLOY_USER}@${DEPLOY_HOST}:/tmp/hnhall.conf
                 ssh ${DEPLOY_USER}@${DEPLOY_HOST} "sudo bash /opt/linyuan-infra/deploy-nginx.sh /tmp/hnhall.conf 40-hnhall.conf"
 

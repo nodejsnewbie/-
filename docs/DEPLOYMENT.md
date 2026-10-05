@@ -12,10 +12,11 @@ Internet
   ▼
 宿主机 Nginx (443, linyuan-infra 管理, *.linyuan.maimaioo.top 通配符证书)
   │  hnhall.linyuan.maimaioo.top
-  ▼
-127.0.0.1:38000  →  hnhall_api 容器 (NestJS, 容器内 :3000)
-                       └─ Docker 网络 shared-infra-net
-                            └─ shared_postgres:5432 / 库 hnhall（一库一账号，linyuan-infra 管理）
+  ├─ /           → /opt/hnhall/frontend（管理端前端静态文件，SPA fallback index.html）
+  ├─ /api/*      → 127.0.0.1:38000 → hnhall_api 容器 (NestJS, 容器内 :3000)
+  │                    └─ Docker 网络 shared-infra-net
+  │                         └─ shared_postgres:5432 / 库 hnhall（一库一账号，linyuan-infra 管理）
+  └─ /healthz    → "OK"（SOP 必选）
 ```
 
 ## 2. 交付物与职责边界
@@ -25,8 +26,9 @@ Internet
 | `.cnb.yml` | main push 自动流水线：门禁 → 镜像 → 部署 → 健康检查 | CNB 平台 |
 | `server/Dockerfile` | 后端镜像（nest build + prisma generate，运行时带 migrate deploy） | 流水线内构建 |
 | `docker-compose.cloud.yml` | 云端编排（端口、接入共享 PG 的 shared-infra-net、healthcheck） | 宿主机 `/opt/hnhall`（流水线自动 scp 同步） |
+| `docker-compose.cloud.yml` | 云端编排（端口、接入共享 PG 的 shared-infra-net、healthcheck） | 宿主机 `/opt/hnhall`（流水线自动 scp 同步） |
 | `docker-compose.dev.yml` | 本地开发 PostgreSQL（`127.0.0.1:5432`，库/账号/口令 = hnhall/hnhall_dev） | 本机 |
-| `nginx/hnhall.conf` | 宿主机 Nginx 路由**留档副本**——权威文件为 linyuan-infra `nginx/40-hnhall.conf`（每文件直部署模式） | linyuan-infra 仓库 |
+| `nginx/hnhall.conf` | 宿主机 Nginx 路由配置（`/` = 前端静态 + `/api/` 反代后端），由流水线调 deploy-nginx.sh 自部署 | 宿主机 `/etc/nginx/conf.d/40-hnhall.conf` |
 
 ## 3. 一次性前置步骤（部署纪律：一切部署动作流水线化，人工仅剩两项）
 
@@ -52,7 +54,8 @@ Internet
 | 环境自检 | node ≥ 20 / docker 可用 | — |
 | 门禁 | `npm ci` → `lint`（admin/mall/server）→ `build`（同范围） | R1 / R2（technician 红灯期间按 ADR-0002 拆分范围） |
 | 镜像 | `docker build -f server/Dockerfile` → push `docker.cnb.cool/yahveyeye/hnhall/api:latest` | — |
-| 部署 | scp compose → `docker compose pull && up -d --remove-orphans` → `image prune` | — |
+| sync | scp compose → 前端静态包（门禁阶段 vite build 的 `apps/admin/dist`）解压到 `/opt/hnhall/frontend` → 生成 `/opt/hnhall/.env` → 调 deploy-nginx.sh 自部署路由 | — |
+| 部署 | `docker compose pull && up -d --remove-orphans` → `image prune` | — |
 | 验证 | 轮询 `http://127.0.0.1:38000/api/health`（约 1 分钟超时，失败打印容器日志） | — |
 
 > 假设说明：流水线未指定 `docker.image`（沿用 linyuan-infra SOP 模板的默认构建环境，含 docker CLI 与 node）。若默认环境 node < 20，"环境自检"阶段会显式失败——届时再为流水线指定 `docker: image:` 并补装 docker CLI。
@@ -101,7 +104,7 @@ bash /opt/linyuan-infra/shared-infra/backup.sh                  # 手动备份�
 
 | 项 | 说明 |
 | --- | --- |
-| 仅部署后端 | admin / mall 前端尚未容器化；接入时按 SOP 申请前端端口（`3{序号}080`）并扩 compose + Nginx 片段 |
+| mall 前端未部署 | C 端商城（`apps/mall`）尚未接入流水线；接入时同模式（构建静态 + 自有域名或路径） |
 | 镜像仅 latest tag | 回滚依赖镜像仓库历史 digest；建议后续加 `${git sha}` tag |
 | 无鉴权 | 后端当前无任何真实鉴权（PROJECT-SPEC 附录 A），公网暴露面 = 只读空库 + 写操作种子级演示；接入真实鉴权（R5/R8）前不建议对外传播域名 |
 | 未使用 Redis | hnhall 服务端当前无缓存依赖；启用时按 linyuan-infra SHARED-INFRA 领取 db 编号，compose 加 `shared-infra-net` 并注入 `REDIS_URL`（口令 secrets 已含 `REDIS_PASSWORD`） |
