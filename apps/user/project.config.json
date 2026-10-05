@@ -1,0 +1,16 @@
+{
+  "description": "华农智服用户端（农户/客户）微信小程序",
+  "appid": "touristappid",
+  "projectname": "hnhall-user",
+  "compileType": "miniprogram",
+  "libVersion": "3.7.0",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "minified": true,
+    "compileHotReLoad": true
+  },
+  "condition": {}
+}

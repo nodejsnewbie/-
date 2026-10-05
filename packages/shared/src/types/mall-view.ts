@@ -7,8 +7,8 @@
  * 口径说明：
  * - `MallProduct` 与企业后台的 `SupplyProduct` 是**同一业务实体的两套视图**
  *   （后台管溯源码量与批次，商城管售卖展示），尚未统一——同 `WorkOrder` / `ServiceOrder`。
- * - `badgeColor` 存的是 **Tailwind 类名**（如 `bg-[#006d40]`），展示与数据耦合，
- *   属存量缺陷，待清理（原样保留以保证响应字节兼容）。
+ * - `MallProduct.badgeColor` 已从类型移除（展示与数据解耦）：后端接口仍可能返回
+ *   兼容字段，但前端不再把它当样式类使用（颜色由前端按 badge 语义映射，见 HomeView）。
  * - 金额字段（`price` / `totalAmount`）在接口契约里是「元」浮点（原型口径）；
  *   存储层一律为「分」整数（R7），换算只在 server 的 mappers 层。
  */
@@ -20,8 +20,7 @@ export interface MallProduct {
   spec: string;
   category: string;
   badge?: string;
-  /** ⚠️ Tailwind 类名混入数据（存量缺陷，待清理） */
-  badgeColor?: string;
+
   tags: string[];
   /** 农药登记证号 / 登记号 */
   licenseNo: string;
@@ -90,6 +89,7 @@ export interface TraceVerificationResult {
   /** ⚠️ 原型为展示字符串（含中文描述后缀），非 ISO 8601 */
   firstQueryTime: string;
   distributionStation: string;
+
   storeInDate: string;
   chain: SupplyChainStep[];
   /** 仅异常码（warning 分支）返回 */
@@ -112,8 +112,20 @@ export interface TraceLedgerEntry {
 /** C 端上门服务预约（飞防 / 施用 / 检测等）。 */
 export interface ServiceBooking {
   id: string;
-  /** field_diagnosis | drone_spraying | soil_formulation | followup_inspection */
-  serviceType: 'field_diagnosis' | 'drone_spraying' | 'soil_formulation' | 'followup_inspection';
+  /**
+   * field_diagnosis 上门植保服务（病虫害诊断）｜delivery_maintenance 农资上门服务维保｜
+   * drone_spraying 飞防作业｜soil_formulation 测土配方｜followup_inspection 回访检查｜
+   * expert_consult 专家咨询（线上图文/电话）
+   * （2026-10-05 按用户端原型图扩展：新增 delivery_maintenance / expert_consult；
+   *   后端 ServiceBooking 为 String 存储，无取值约束，仅此类型与注释需同步）
+   */
+  serviceType:
+    | 'field_diagnosis'
+    | 'delivery_maintenance'
+    | 'drone_spraying'
+    | 'soil_formulation'
+    | 'followup_inspection'
+    | 'expert_consult';
   cropType: string;
   /** 亩 */
   acreage: number;

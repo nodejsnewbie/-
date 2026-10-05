@@ -1,0 +1,554 @@
+// 华农智服 · 统一后端 —— 数据层
+//
+// ⚠️⚠️ 本 schema 是 **v0 临时版，直接源自原型（Mock）的数据形状，尚未经客户确认**。
+//     需求确认后**必然要改**：字段归属、枚举取值、结算口径、审批流都会变。
+//     把它当成「让后端能真正跑起来、数据能持久」的第一步，不是最终设计。
+//     依据：根目录 AGENTS.md 的「前提状态」——所有业务口径目前都是开发方假设。
+//
+// 已刻意**不**纳入 schema 的东西（因为它们是未确认的业务规则，不是数据结构）：
+//   · 分红档位系数与计算公式（见 docs/requirements/amoeba-policy.md，待客户+财务确认）
+//   · 资质审核的准入判定规则（R5，纯人工审核）
+//   · 窜货熔断 / 批次冻结的状态流转（本期不做）
+//   这些逻辑留在 service 层，等确认后重写。
+//
+// ── provider ────────────────────────────────────────────────────────────────
+// 开发：SQLite（零依赖，clone 即可跑）  ·  生产目标：PostgreSQL
+// 切库要做：改 provider → 重跑迁移 → 重新 generate client。仓储层代码不动，
+//          但**这不叫「改个环境变量」**。
+//
+// ── 写模型时的约定（已实测，勿凭印象改）────────────────────────────────────
+//   1. **枚举用 String 存，不用 Prisma `enum`**。
+//      实测 enum 在 SQLite 上是能建的（db push 成功），但落成普通 `TEXT NOT NULL`，
+//      **没有任何取值约束**；而 PG 上 Prisma 会建真正的 enum 类型 → 两个 provider 的 DDL
+//      分叉。为切库平滑，统一 String + `@hnhall/shared` 的 TS 字符串字面量联合类型。
+//      每个枚举列的合法取值写在字段上方的注释里。
+//   2. **金额一律 Int 存「分」**（红线 R7），列名以 `Cents` 结尾，仓储边界负责 ÷100。
+//      ⚠️ 例外：**Json 快照内的金额不转换**（见 `costBreakdown`）——深度改写 JSON blob
+//      只会引入新的失真点，而 blob 本身是「下单时刻的视图快照」，等真模型落地会重做。
+//      **参与结算运算的金额一定不在 Json 里**（处方行项目已抽成独立表就是为此）。
+//   3. `Json` 在 SQLite 上落成 `JSONB`，可用；只用于**视图态嵌套结构**。
+//   4. 禁止 `@db.*` 原生类型注解与 PG 专有数组类型（切库会炸）。
+//   5. 主键统一 String（原型里的 id 直接沿用），避免 SQLite 与 PG 的自增语义差异。
+//   6. **列表顺序用 `orderKey Int` 显式维护**，不依赖插入顺序或 id 排序——
+//      原型里有 `unshift`（前插）语义，必须能确定性复现。
+//      前插 = `min(orderKey) - 1`；种子数据用 0,1,2,…
+//
+// ⚠️ 探针请在 `server/prisma/` 目录内做：SQLite 连接器无法在 %TEMP% 建库
+//    （会报 `unable to open database file`，容易被误判成类型不支持——已踩过）。
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  企业后台
+// ════════════════════════════════════════════════════════════════════════════
+
+/// 技术服务人员名册。对应 `@hnhall/shared` 的 `Technician`。
+model Technician {
+  id       String @id
+  orderKey Int    @default(0)
+
+  code   String
+  name   String
+  title  String
+  phone  String
+  avatar String
+
+  licenseNumber     String
+  licenseThumb      String
+  licenseAuthority  String
+  licenseExpiry     String
+  /// normal | expiring | pending_review | expired
+  licenseStatus     String
+  licenseExpiryDays Int?
+
+  /// diamond | gold | silver | trainee
+  amoebaTier        String
+  amoebaTierName    String
+  amoebaCoefficient Float
+  teamName          String
+  commissionRatio   String
+
+  menteeCount              Int
+  independentMentees       Int
+  /// ⚠️ 单位未确认（可能是金额也可能是件数），暂按原型存 Float。
+  ///    客户确认后若为金额，须改为 Int 分。
+  teamMonthlyOutput        Int
+  mentorshipAllowanceCents Int
+
+  gridName       String
+  coverageRadius Int
+  boundEquipment String
+
+  completedOrders  Int
+  operationAcreage Int
+  rating           Float
+  reviewCount      Int
+  goodReviewRate   Float
+
+  /// active | need_annual_review | pending_qualification | busy | locked
+  dispatchStatus     String
+  dispatchStatusText String
+}
+
+/// 工单。对应 `@hnhall/shared` 的 `WorkOrder`。
+/// 状态机：pending_dispatch → dispatched → checked_in → prescription_issued → completed（+ exception）
+model WorkOrder {
+  id       String @id
+  orderKey Int    @default(0)
+
+  farmerName String
+  coopName   String?
+  phone      String
+  location   String
+  gridCode   String
+  crop       String
+  acreage    Float
+  cropStage  String
+  symptom    String
+
+  /// diagnosis | drone | machinery | soil（注意：原型无「农资配送」取值，待确认）
+  serviceCategory     String
+  serviceCategoryText String
+
+  /// critical | high | normal
+  urgency        String
+  urgencyText    String
+  specialSubsidy String?
+
+  reportedTime    String
+  waitingMinutes  Int
+  requestedAction String
+
+  /// pending_dispatch | dispatched | checked_in | prescription_issued | completed | exception
+  status      String
+  statusText  String
+  currentStep Int
+
+  // —— 派单信息 ——
+  // ⚠️ distanceKm / estimatedArrivalMin / matchScore 本期**没有真实数据来源**
+  //    （无地图服务），只能作为示意值。见 AGENTS.md 注意事项 2。
+  assignedTechnicianId         String?
+  assignedTechnicianName       String?
+  assignedTechnicianPhone      String?
+  assignedTechnicianTitle      String?
+  assignedTechnicianAvatar     String?
+  assignedTechnicianDistanceKm Float?
+  assignedTechnicianEtaMin     Int?
+  assignedTechnicianMatchScore Float?
+  /// 候选技师列表（纯视图态，无结算含义）→ Json
+  matchedCandidates            Json?
+
+  // —— 履约 ——
+  prescriptionCode    String?
+  prescriptionContent String?
+  watermarkVerified   Boolean?
+  watermarkTime       String?
+  watermarkGps        String?
+  signedAt            String?
+
+  /// 结算金额（分）。⚠️ R7 要求工单**分别记录「服务净值」与「农资金额」**，
+  ///    单一 settlementAmount 不满足该口径——待客户确认后拆列。
+  settlementAmountCents Int?
+}
+
+/// 资质申请。对应 `AuditApplication`。
+/// ⚠️ R5：审核是**纯人工**结论。`nationalRegistryVerified` 是原型占位（与省厅校验
+///    接口权限申请中，见 AGENTS.md「外部监管系统」），留作契约占位。
+model AuditApplication {
+  id       String @id
+  orderKey Int    @default(0)
+
+  code          String
+  applicantName String
+  applicantType String
+  idCard        String
+  phone         String
+  avatar        String
+  targetGrid    String
+  urgent        Boolean
+
+  licenseNumber    String
+  licenseScanUrl   String
+  licenseAuthority String
+
+  /// 待确认：与省级农业农村厅许可数据双向校验契约（权限申请中）
+  nationalRegistryVerified Boolean
+
+  permittedScope     String
+  validPeriod        String
+  assignedAmoebaTeam String
+  amoebaCoefficient  String
+  auditNotes         String
+
+  /// pending | approved | rejected | revision
+  status String
+}
+
+/// 农资产品与溯源。对应 `SupplyProduct`。
+/// ⚠️ `fleeStatus` / `fleeStatusText` / `fleeLocation` 属「窜货熔断」，
+///    已定**本期不做**，待从 schema 与界面移除（等客户确认）。
+model SupplyProduct {
+  id       String @id
+  orderKey Int    @default(0)
+
+  name     String
+  spec     String
+  /// eco | pest_control | warning | fluid_balance | shield
+  iconType String
+
+  registrationNumber String
+  registrationNotes  String
+  batchNumber        String
+  manufactureDate    String
+
+  totalCoded      Int
+  totalCodedUnit  String
+  scanCount       Int
+  scanCountUnit   String
+  scanProgressPct Float
+
+
+  prescriptionCommissionRate Float
+
+  /// ⚠️ 单位未确认，暂按原型存 Float
+  monthlySales Float
+
+  /// 溯源节点数组 [{ time, desc }] —— 真模型下应建表，v0 先用 Json
+  traceabilityNodes Json
+}
+
+/// 阿米巴结算单。对应 `AmoebaSettlement`。**全部金额为「分」**（R7）。
+/// ⚠️ 分红口径（基数、档位系数、扣减）尚未经客户与财务确认，
+///    本表只存**结果**，不存算法；算法待 docs/requirements/amoeba-policy.md 定稿后写。
+model AmoebaSettlement {
+  id       String @id
+  orderKey Int    @default(0)
+
+  partnerCode         String
+  partnerName         String
+  partnerAvatarLetter String
+  partnerLevel        String
+  teamName            String
+  menteeStatus        String
+
+  serviceFeeCents        Int
+  prescriptionBonusCents Int
+  mentorshipBonusCents   Int
+  equityDividendCents    Int
+  grossAmountCents       Int
+  taxWithheldCents       Int
+  netPayCents            Int
+
+  /// pending | cleared | processing
+  status        String
+  bankClearedAt String?
+}
+
+/// 履约事件流（总览页时间线）。对应 `FulfillmentEvent`。
+model FulfillmentEvent {
+  id       String @id
+  orderKey Int    @default(0)
+
+  /// check_in | prescription | sign_off | dispatch
+  type      String
+  title     String
+  timestamp String
+  summary   String
+
+  technicianName String
+  location       String
+  gps            String?
+  droneModel     String?
+  photoUrl       String?
+  qrTraceCode    String?
+  batchCode      String?
+
+  rating               Float?
+  settlementBonusCents Int?
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  技师端（视图模型，待与上面的领域模型收敛 —— 见 AGENTS.md 的类型统一任务）
+// ════════════════════════════════════════════════════════════════════════════
+
+/// 技师端本人档案（单例，id 固定为 `self`）。对应 `TechnicianProfile`。
+model TechnicianProfile {
+  id String @id
+
+  name        String
+  title       String
+  role        String
+  partnerCode String
+  certId      String
+  station     String
+
+  pesticideLicense    String
+  rating              Float
+  yearsOfService      Int
+  isOnline            Boolean
+  onlineHoursToday    Float
+  groupRank           Int
+  groupName           String
+
+  avatarUrl        String
+  headerProfileUrl String
+  logoUrl          String
+}
+
+/// 技师端工单视图。对应 `ServiceOrder`。
+/// ⚠️ 与 `WorkOrder` 是**同一业务实体的两套模型**，尚未统一。
+/// ⚠️ `distanceKm` 本期无真实数据来源（无地图服务），界面只能以「示意」标注显示。
+model ServiceOrder {
+  id       String @id
+  orderKey Int    @default(0)
+
+  orderNo     String
+  title       String
+  serviceType String
+  urgencyTag  String?
+  urgencyBg   String?
+
+  /// dispatching | accepted | in_progress | prescribed | completed
+  status           String
+  dispatchTimeText String
+
+  /// ⚠️ 无真实数据来源（无地图服务），示意值
+  distanceKm Float
+
+  farmerName    String
+  farmerPhone   String
+  farmerTag     String
+  locationName  String
+  roadCondition String
+  scheduledTime String
+  cropScale     String
+  farmerQuote   String
+
+  /// [{ label, url }] 纯展示
+  farmerPhotos Json
+
+  estimatedFeeCents Int
+  amoebaBonusCents  Int
+  bonusPercent      Float
+  laborFeeCents     Int
+
+  /// [{ item, amount, note }] —— 纯展示快照。
+  /// ⚠️ 这里面的 `amount` **不转分**（见文件头第 2 条例外说明）；它不参与结算运算。
+  costBreakdown Json
+
+  /// FieldEvidencePhoto[] —— 现场取证照片
+  fieldEvidencePhotos Json
+
+  /// string[] —— ⚠️ 不能用 Prisma 标量数组（PG 专有，SQLite 不支持），故用 Json
+  diagnosedTargets Json
+  agronomicAdvice  String
+
+  deliveryNoteId  String
+  farmerSignature String?
+  signedAt        String?
+
+  /// 处方行项目（参与结算运算，故抽成独立表、金额存分）
+  prescriptionDrugs ServiceOrderPrescriptionDrug[]
+}
+
+/// 处方行项目。从 `ServiceOrder.prescriptionDrugs` 抽出成独立表，
+/// **因为它参与结算运算**（`Σ price × qty` 用于算处方分润），金额必须在 Json 之外存分。
+model ServiceOrderPrescriptionDrug {
+  id             String @id
+  serviceOrderId String
+  orderKey       Int    @default(0)
+
+  drugId           String
+  name             String
+  spec             String
+  priceCents       Int
+  qty              Int
+  code             String
+  tag              String
+  img              String
+  activeIngredient String?
+  dosage           String?
+
+  serviceOrder ServiceOrder @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
+
+  @@index([serviceOrderId])
+}
+
+/// 农药目录（技师端开方时选药 + 扫码验真）。对应 `PrescriptionDrug`。
+model PesticideCatalogItem {
+  id       String @id
+  orderKey Int    @default(0)
+
+  name             String
+  spec             String
+  priceCents       Int
+  qty              Int
+  code             String
+  tag              String
+  img              String
+  activeIngredient String?
+  dosage           String?
+}
+
+/// 技师端收益概览（单例，id 固定为 `self`）。对应 `AmoebaStat`。**金额为分**。
+/// ⚠️ 分红口径（基数、档位系数）以「仅来自服务收入」为基准，待客户确认后定稿。
+model AmoebaStat {
+  id String @id
+
+  totalMonthIncomeCents  Int
+  growthPct              Float
+  serviceCommissionCents Int
+  serviceTasksCount      Int
+
+  groupTargetRate    Float
+  groupBaselineCents Int
+  groupTierBonus     String
+}
+
+/// 团队成员动态。对应 `TeamMemberFeed`。
+model TeamMemberFeed {
+  id       String @id
+  orderKey Int    @default(0)
+
+  name   String
+  avatar String
+  action String
+  target String
+  points String
+}
+
+/// 收益流水。对应 `RevenueTransaction`。**金额为分**。
+/// ⚠️ 提现流水此处金额为负；分润/工时收入为正。
+model RevenueTransaction {
+  id       String @id
+  orderKey Int    @default(0)
+
+  title       String
+  sub         String
+  amountCents Int
+  /// mixed | prescription | referral | service
+  type        String
+  time        String
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  C 端 · 用户端小程序（apps/user，自 E:\repo\zymall 于 2026-10 并入，2026-10 由 H5 转 Taro）
+// ════════════════════════════════════════════════════════════════════════════
+
+/// C 端商城商品视图。对应 `@hnhall/shared` 的 `MallProduct`。
+/// ⚠️ 与企业后台的 `SupplyProduct` 是**同一业务实体的两套视图**（后台管溯源码量与批次，
+///    商城管售卖展示），尚未统一——同 `WorkOrder` / `ServiceOrder` 的关系。
+model MallProduct {
+  id       String @id
+  orderKey Int    @default(0)
+
+  name     String
+  spec     String
+  category String
+  badge    String?
+
+  /// string[] —— 不能用标量数组（PG 专有），Json 存
+  tags     Json
+
+  licenseNo String
+  batchNo   String
+  /// 售价（分）；响应层由 mapper 还原为「元」浮点（原型契约不变）
+  priceCents         Int
+  originalPriceCents Int?
+
+  soldCount String
+  image     String
+  traceCode String
+
+  activeIngredient String
+  toxicity         String
+  formulation      String
+  targetDisease    String
+  dosagePerMu      String
+  waterPerMu       String
+  safeInterval     String
+  manufacturer     String
+
+  highlightText String?
+
+  isOfficialDirect Boolean
+  canBookService   Boolean
+}
+
+/// 农户扫码查验台账（数字台账）。对应 `TraceLedgerEntry`。
+/// ⚠️ 原型在**验真接口里**顺手写台账（unshift 前插）；真模型下应由溯源服务产生节点，
+///    这里只复刻原型行为，不代表台账是权威溯源记录（溯源权威在监管链路）。
+model TraceLedgerEntry {
+  id       String @id
+  orderKey Int    @default(0)
+
+  code        String
+  productName String
+  batchNo     String
+  licenseNo   String
+  /// ⚠️ 原型存展示字符串（'2024-10-01 09:41' / toLocaleString），非 ISO 8601
+  queryTime String
+  /// passed | warning
+  status  String
+  station String
+}
+
+/// C 端上门服务预约。对应 `ServiceBooking`。
+model ServiceBooking {
+  id       String @id
+  orderKey Int    @default(0)
+
+  /// field_diagnosis | drone_spraying | soil_formulation | followup_inspection
+  serviceType String
+  cropType    String
+  /// 亩
+  acreage       Float
+  preferredDate String
+  timeSlot      String
+  station       String
+  contactName   String
+  /// ⚠️ 存量缺陷：原型手机号未脱敏。脱敏规范见 AGENTS.md（所有输出面）
+  contactPhone String
+  plotAddress  String
+  /// string[] —— Json 存
+  associatedProducts Json
+  notes String?
+
+  /// submitted | assigned | in_progress | completed
+  status String
+
+  /// 指派农艺师（原型为嵌套对象 assignedAgronomist，拍平成列；响应层再组装）
+  agronomistName   String?
+  agronomistCertId String?
+  agronomistPhone  String?
+  agronomistTitle  String?
+}
+
+/// C 端商城订单。对应 `MallOrderSubmission`。
+/// ⚠️ 原型只有下单（POST）没有订单列表/详情接口——本表为后续留的持久化，
+///    响应形状以接口契约为准（totalAmount 由请求实时计算后返回）。
+model MallOrder {
+  /// 即响应里的 orderId（原型格式 `DD-${Date.now()后8位}`）
+  id        String @id
+  createdAt String
+
+  /// CartItem[] 下单时刻的商品快照（Json）。
+  /// ⚠️ 快照内金额按约定**不转分**（见文件头第 2 条例外说明）。
+  items Json
+
+  /// 订单总额（分）；响应层还原为「元」浮点
+  totalAmountCents      Int
+  eligibleForFreeRecipe Boolean
+
+  deliveryStation  String
+  deliveryEstimate String
+  /// 原型写死 'dispatched'
+  status String
+}

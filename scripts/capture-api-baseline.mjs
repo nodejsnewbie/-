@@ -102,7 +102,7 @@ const MALL_POSTS = [
 ];
 
 async function main() {
-  const out = process.argv[2] ?? 'server/test/api-baseline.json';
+  const out = process.argv[2] ?? 'services/server/test/api-baseline.json';
   const profile = process.argv[3] ?? 'core';
   const result = {};
 

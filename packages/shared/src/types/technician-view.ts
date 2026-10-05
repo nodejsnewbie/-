@@ -8,10 +8,11 @@
  * 在那之前这里保持原样，不做任何字段增删——迁移只搬结构，不改口径。
  *
  * 已知待清理字段（等客户确认需求后处理，勿在迁移中顺手删掉）：
- * - `ServiceOrder.distanceKm` / `gpsCoords`：本期无定位能力，界面上的距离只能是示意值
  * - `AmoebaStat.prescriptionDividend` / `teamReferralDividend` / `equityPreDraw`：
- *   分红口径已定为「仅来自服务收入」，这三项待评审
- * - `TechnicianProfile.incentiveMultiplier`：档位系数尚未定稿
+ *   分红口径已定为「仅来自服务收入」，这三项被否定，已从类型与界面移除
+ * - `TechnicianProfile.incentiveMultiplier`：档位系数尚未定稿，已从类型与界面移除
+ * - `ServiceOrder.gpsCoords`：无定位能力，已从类型与界面移除；
+ *   `distanceKm` 保留（注意事项 2：无定位能力，界面只能以「示意」标注显示，不得作派单决策/绩效/结算依据）
  */
 
 export interface TechnicianProfile {
@@ -26,7 +27,7 @@ export interface TechnicianProfile {
   yearsOfService: number;
   isOnline: boolean;
   onlineHoursToday: number;
-  incentiveMultiplier: number;
+
   groupRank: number;
   groupName: string;
   avatarUrl: string;
@@ -69,7 +70,7 @@ export interface ServiceOrder {
   farmerPhone: string;
   farmerTag: string;
   locationName: string;
-  gpsCoords: string;
+
   roadCondition: string;
   scheduledTime: string;
   cropScale: string;
@@ -101,9 +102,7 @@ export interface AmoebaStat {
   growthPct: number;
   serviceCommission: number;
   serviceTasksCount: number;
-  prescriptionDividend: number;
-  teamReferralDividend: number;
-  equityPreDraw: number;
+
   groupTargetRate: number;
   groupBaseline: number;
   groupTierBonus: string;

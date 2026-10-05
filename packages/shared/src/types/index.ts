@@ -110,9 +110,7 @@ export interface AuditApplication {
   licenseNumber: string;
   licenseScanUrl: string;
   licenseAuthority: string;
-  ocrMatchRate: number;
   nationalRegistryVerified: boolean;
-  identityFaceMatched: boolean;
   permittedScope: string;
   validPeriod: string;
   assignedAmoebaTeam: string;
@@ -135,9 +133,7 @@ export interface SupplyProduct {
   scanCount: number;
   scanCountUnit: string;
   scanProgressPct: number;
-  fleeStatus: 'normal' | 'alert';
-  fleeStatusText: string;
-  fleeLocation?: string;
+
   prescriptionCommissionRate: number;
   monthlySales: number;
   traceabilityNodes: Array<{

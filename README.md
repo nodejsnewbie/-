@@ -6,7 +6,7 @@
 ## 架构总览
 
 ```
-用户 ──► 三端（界面）────────────────────────► 统一后端 server/ ──► SQLite(开发) / PostgreSQL(目标)
+用户 ──► 三端（界面）────────────────────────► 统一后端 services/server/ ──► SQLite(开发) / PostgreSQL(目标)
               │                                    ▲
               │ Vite 代理 /api（开发期）             │
               └────────────────────────────────────┘
@@ -18,8 +18,8 @@
 |---|---|---|---|---|---|
 | 企业端后台 | `apps/admin` | 运营管理员、区域督导 | Vite 8 + React 19 + TS 7 | 5173 | ✅ 界面完成，已 feature 化 |
 | 技师端 | `apps/technician` | 农艺师、飞手、机手 | **Taro 4.3**（微信小程序）+ React 18 | 小程序 | 🔶 脚手架已通构建；组件层 H5→Taro 适配进行中 |
-| C 端用户端 | `apps/mall` | 农户、合作社 | Vite 8 + React 19 H5 | 5174 | ✅ 界面完成（小程序化待定） |
-| **统一后端** | `server` | 三端共用 | NestJS 11 + Prisma（SQLite） | 3000 | ✅ 41 条路由（后台 16 + 技师端 16 + 商城 9） |
+| C 端用户端 | `apps/user` | 农户、合作社 | **Taro 4.3**（微信小程序）+ React 18 | 小程序 | ✅ 界面完成（H5→Taro 已转） |
+| **统一后端** | `services/server` | 三端共用 | NestJS 11 + Prisma（SQLite） | 3000 | ✅ 41 条路由（后台 16 + 技师端 16 + 商城 9） |
 | **AI 智能代理层** | `services/ai` | 给端提供智能对话 | Python + FastAPI + LangChain | 8100 | ✅ REST 契约就绪（LLM 密钥未配则诚实降级） |
 | 共享类型 | `packages/shared` | — | 纯类型（`import type`） | — | ✅ 三端与后端的类型真源 |
 
@@ -33,12 +33,12 @@
 npm install                       # 根目录一次装齐（workspaces 分发）
 npm run dev:server                # 统一后端 :3000（watch）
 npm run dev:admin                 # 企业端 :5173
-npm run dev:mall                  # C 端商城 :5174
+npm run dev:user                   # C 端用户小程序（Taro watch 编译，产物用微信开发者工具打开 apps/user/dist）
 npm run dev:technician            # 技师端小程序（Taro watch 编译，产物用微信开发者工具打开 apps/technician/dist）
 npm run dev:ai                    # AI 代理层 :8100（需先配置 services/ai/.env）
 ```
 
-- 数据库：开发期 SQLite（`server/prisma/dev.db`），`node server/dist/database/seed.js` 幂等重播种子
+- 数据库：开发期 SQLite（`services/server/prisma/dev.db`），`node services/server/dist/database/seed.js` 幂等重播种子
 - AI 层密钥：`services/ai/.env`（OpenAI 兼容协议，可指向豆包/智谱/通义）
 
 ## 质量门禁（提交前必跑）
@@ -46,7 +46,7 @@ npm run dev:ai                    # AI 代理层 :8100（需先配置 services/a
 ```bash
 npm run lint          # tsc --noEmit（类型，R1）
 npm run lint:eslint   # ESLint（代码质量）
-npm run build         # 全工作区构建（admin/mall=Vite，technician=Taro weapp，server=nest）
+npm run build         # 全工作区构建（admin=Vite，technician/user=Taro weapp，services/server=nest）
 npm run format        # Prettier
 ```
 

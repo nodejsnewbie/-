@@ -2,11 +2,11 @@
   "name": "hnhall",
   "private": true,
   "version": "1.0.0",
-  "description": "华农智服 · 农资上门服务维保平台（monorepo：企业后台 / 技师端 / C 端商城 / 统一后端）",
+  "description": "华农智服 · 农资上门服务维保平台（monorepo：企业后台 / 技师端 / C 端用户端 / 统一后端）",
   "workspaces": [
     "apps/*",
     "packages/*",
-    "server"
+    "services/server"
   ],
   "scripts": {
     "dev": "npm run dev -w @hnhall/server",
@@ -17,7 +17,7 @@
     "lint": "npm run lint --workspaces --if-present",
     "clean": "npm run clean --workspaces --if-present",
     "start": "npm run start -w @hnhall/server",
-    "dev:mall": "npm run dev -w @hnhall/mall",
+    "dev:user": "npm run dev -w @hnhall/user",
     "lint:eslint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -28,7 +28,6 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@tarojs/taro-loader": "^4.3.0",
     "eslint": "^10.12.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.13.0",

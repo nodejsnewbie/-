@@ -1,0 +1,41 @@
+{
+  "name": "@hnhall/user",
+  "private": true,
+  "version": "1.0.0",
+  "description": "用户端 · 农资上门服务微信小程序（服务预约/订单/溯源验真；Taro + React）",
+  "scripts": {
+    "dev": "taro build --type weapp --watch",
+    "build": "taro build --type weapp",
+    "clean": "node -e \"import('node:fs').then(({rmSync})=>rmSync('dist',{recursive:true,force:true}))\"",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hnhall/shared": "*",
+    "@tarojs/components": "4.3.0",
+    "@tarojs/plugin-framework-react": "4.3.0",
+    "@tarojs/plugin-platform-weapp": "4.3.0",
+    "@tarojs/react": "4.3.0",
+    "@tarojs/runtime": "4.3.0",
+    "@tarojs/taro": "4.3.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwindcss": "^3.4.17",
+    "weapp-tailwindcss": "3.7.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.29.7",
+    "@babel/preset-env": "^7.29.7",
+    "@babel/preset-react": "^7.29.7",
+    "@babel/preset-typescript": "^7.29.7",
+    "@tarojs/cli": "4.3.0",
+    "@tarojs/taro-loader": "^4.3.0",
+    "@tarojs/webpack5-runner": "4.3.0",
+    "@types/node": "^22.14.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.6.1",
+    "babel-preset-taro": "^4.3.0",
+    "postcss": "^8.5.28",
+    "typescript": "^6.0.2"
+  }
+}

@@ -59,7 +59,7 @@ function walk(dir) {
 const HTTP_METHODS = ['Get', 'Post', 'Put', 'Patch', 'Delete'];
 const found = [];
 
-for (const file of walk('server/src')) {
+for (const file of walk('services/server/src')) {
   const text = readFileSync(file, 'utf8');
 
   // ⚠️ 一个文件里可能有**多个** `@Controller`（后台与技师端同域，各一个 controller）。

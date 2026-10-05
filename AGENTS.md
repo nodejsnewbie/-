@@ -11,11 +11,11 @@
 
 三端形态（本仓库承载第 1、3 端，技师端待建）：
 
-| 端               | 使用者                                       | 状态                                                                                                            |
-| ---------------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| 企业端（本仓库） | 企业运营管理员（兼资质审核与结算）、区域督导 | ✅ 界面与交互框架已完成（数据为种子 Mock）                                                                      |
-| 技术服务人员端   | 农艺师、植保机手、飞手、农机手、土壤检测人员 | 🎯 规划中                                                                                                       |
-| C 端用户端       | 农户、合作社、种植大户                       | ✅ H5 版（农资自营商城，自 `E:\repo\zymall` 并入 `apps/mall`）已完成界面与交互（数据为种子 Mock）；小程序化待定 |
+| 端 | 使用者 | 状态 |
+| --- | --- | --- |
+| 企业端（本仓库） | 企业运营管理员（兼资质审核与结算）、区域督导 | ✅ 界面与交互框架已完成（数据为种子 Mock） |
+| 技术服务人员端 | 农艺师、植保机手、飞手、农机手、土壤检测人员 | 🔶 Taro 小程序：构建与接口接线完成（2026-10-05），真机验证待做 |
+| C 端用户端 | 农户、合作社、种植大户 | ✅ Taro 小程序（原 H5 商城自 `E:\repo\zymall` 并入 `apps/user`，2026-10 转小程序）已完成界面与交互（数据为种子 Mock） |
 
 七大业务模块：运营数据总览、订单调度管理、技术人员管理、资质与合规审核、农资供应链与溯源、阿米巴分红与结算、系统设置与权限。
 
@@ -37,36 +37,36 @@
 
 ## 技术栈
 
-**仓库为 monorepo（npm workspaces）**
+### 仓库为 monorepo（npm workspaces）
 
-| 路径              | 内容                                          | 技术                                              | 状态                                                                |
-| ----------------- | --------------------------------------------- | ------------------------------------------------- | ------------------------------------------------------------------- |
-| `apps/admin`      | 企业端后台管理系统前端                        | Vite 8 + React 19 + Tailwind 4 + **TypeScript 7** | ✅ 框架与界面已完成，**已 feature 化**（`app/ + features/<域>/`，数据全 Mock） |
-| `apps/technician` | 技师端（微信小程序）                          | **Taro（React）**                                 | ⬜ **待建**（原 H5 版在 `E:\repo\technicalend`，仅作移植参照）      |
-| `apps/mall`       | C 端 · 农资自营商城与防伪溯源（H5）           | Vite 8 + React 19 + Tailwind 4 + **TypeScript 7** | ✅ **已并入**（自 `E:\repo\zymall`，数据为种子 Mock；小程序化待定） |
-| `server`          | **统一后端**，同时服务后台、技师端与 C 端商城 | NestJS 11 + Express + **TypeScript 6**            | ✅ **41 条路由已全部迁入模块**，controller → service → 仓储 三层（后台 16 + 技师端 16 + C 端商城 9） |
-| `services/ai`     | **AI 智能代理层**（第四个服务，独立进程）     | Python 3.12+ + **FastAPI** + **LangChain 1.x**    | ✅ 标准化 REST `/api/v1`（OpenAPI 契约）+ 智能代理（工具 = 平台 REST 接口），pytest 5 项契约测试 |
-| `packages/shared` | 跨端领域类型真源                              | 纯类型（`import type`，运行期完全擦除）           | ✅ 已抽离                                                           |
-| `docs`            | 规范、需求、问卷、决策记录                    | —                                                 | ✅                                                                  |
+| 路径 | 内容 | 技术 | 状态 |
+| --- | --- | --- | --- |
+| `apps/admin` | 企业端后台管理系统前端 | Vite 8 + React 19 + Tailwind 4 + **TypeScript 7** | ✅ 框架与界面已完成，**已 feature 化**（`app/ + features/<域>/`，数据全 Mock） |
+| `apps/technician` | 技师端（微信小程序） | **Taro（React）** | 🔶 构建与接口接线完成（2026-10-05），真机验证待做 |
+| `apps/user` | C 端 · 用户端小程序（商城/上门/溯源） | **Taro（React）** | ✅ 已并入并转小程序（自 `E:\repo\zymall`，数据为种子 Mock） |
+| `services/server` | **统一后端**，同时服务后台、技师端与 C 端用户端 | NestJS 11 + Express + **TypeScript 6** | ✅ **41 条路由已全部迁入模块**，controller → service → 仓储 三层（后台 16 + 技师端 16 + C 端 9） |
+| `services/ai` | **AI 智能代理层**（第四个服务，独立进程） | Python 3.12+ + **FastAPI** + **LangChain 1.x** | ✅ 标准化 REST `/api/v1`（OpenAPI 契约）+ 智能代理（工具 = 平台 REST 接口），pytest 5 项契约测试 |
+| `packages/shared` | 跨端领域类型真源 | 纯类型（`import type`，运行期完全擦除） | ✅ 已抽离 |
+| `docs` | 规范、需求、问卷、决策记录 | — | ✅ |
 
-**⚠️ TypeScript 版本是分裂的，这是有意为之**
+### ⚠️ TypeScript 版本是分裂的，这是有意为之
 
-| 工作区       | TS 版本 | 原因                                                                                                                                                                                                                                        |
-| ------------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `apps/admin` | **7.x** | 前端只需 tsc/vite，TS 7 可用                                                                                                                                                                                                                |
-| `server`     | **6.x** | **Nest CLI 依赖编译器 API，而 TS 7.0 只发 `tsc` 可执行文件、去掉了编程 API**（Nest CLI 报错原文如此，并称 7.1 会恢复）。已实测：TS 7 的 `tsc` **能**正确产出 `design:paramtypes` 装饰器元数据（DI 本身没问题），**唯一不通的就是 Nest CLI** |
+| 工作区 | TS 版本 | 原因 |
+| --- | --- | --- |
+| `apps/admin` | **7.x** | 前端只需 tsc/vite，TS 7 可用 |
+| `services/server` | **6.x** | **Nest CLI 依赖编译器 API，而 TS 7.0 只发 `tsc` 可执行文件、去掉了编程 API**（Nest CLI 报错原文如此，并称 7.1 会恢复）。已实测：TS 7 的 `tsc` **能**正确产出 `design:paramtypes` 装饰器元数据（DI 本身没问题），**唯一不通的就是 Nest CLI** |
 
-> 待 TS 7.1 恢复编译器 API 后，可把 server 也升到 7.x 并收敛为一个版本。
+> 待 TS 7.1 恢复编译器 API 后，可把 services/server 也升到 7.x 并收敛为一个版本。
 
-**后端形态**
+## 后端形态
 
 - 目标基线：NestJS + PostgreSQL + Redis + 对象存储 + 消息队列 + OpenAPI 3 契约
-- **当前：三套旧 Express Mock（后台 / 技师端 / C 端商城）已全部迁入 NestJS 模块，`server/src/legacy/` 已删除**
+- **当前：三套旧 Express Mock（后台 / 技师端 / C 端商城）已全部迁入 NestJS 模块，`services/server/src/legacy/` 已删除**
   - 按**业务域**分模块——企业后台与技师端是同一业务域的两个视图，因此同模块内用两个 controller 区分端
   - `modules/dashboard · order · technician · qualification · supply-chain · amoeba · system · mall`
   - 数据已落 Prisma（开发期 SQLite）：仓储在 `src/database/repositories/`，种子数据 `src/database/seed-data/`（原型 Mock 逐字迁入），`node dist/database/seed.js` 幂等复位
 - **迁移的验收方式（必须有证据）**：迁移前后抓同一批响应**逐字节比对**
-  - 夹具：`server/test/api-baseline.json`（后台 + 技师端）、`server/test/api-baseline-mall-*.json`（C 端商城，迁移前/后各一份）
+  - 夹具：`services/server/test/api-baseline.json`（后台 + 技师端）、`services/server/test/api-baseline-mall-*.json`（C 端商城，迁移前/后各一份）
   - 脚本：`scripts/capture-api-baseline.mjs`（`core` 默认 / `mall` profile）→ `scripts/compare-api-baseline.mjs`
   - 写操作与错误形状：`scripts/smoke-mutations.mjs`
   - 后台+技师端迁移结果：GET **15/15 逐字节一致**；写操作 + 404/400 形状 **26 项断言全过**
@@ -74,16 +74,16 @@
 - **⚠️ 业务规则与数据库表结构待客户确认需求后再落**（见下方「前提状态」）
   —— 本次迁移**只搬结构、不改口径**：所有存量缺陷（浮点金额、虚构字段、硬编码汇总值）原样保留，并就地加注说明
 
-**数据层（Prisma）**
+## 数据层（Prisma）
 
-| 项       | 取值                                                                                                                                                                                                                                   |
-| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ORM      | Prisma 6（`server/prisma/schema.prisma`）                                                                                                                                                                                              |
-| 开发环境 | **SQLite**（`server/prisma/dev.db`，零依赖，clone 即可跑）                                                                                                                                                                             |
-| 生产目标 | PostgreSQL —— 切换需改 `provider` → 重跑迁移 → 重新 generate client；仓储层代码不动，**但这不叫「改个环境变量」**                                                                                                                      |
+| 项 | 取值 |
+| --- | --- |
+| ORM | Prisma 6（`services/server/prisma/schema.prisma`） |
+| 开发环境 | **SQLite**（`services/server/prisma/dev.db`，零依赖，clone 即可跑） |
+| 生产目标 | PostgreSQL —— 切换需改 `provider` → 重跑迁移 → 重新 generate client；仓储层代码不动，**但这不叫「改个环境变量」** |
 | 当前模型 | **v0 临时版，源自原型数据形状**（后台 / 技师端 / 商城域共 17 张视图模型），待客户确认需求后修订。约定：金额存「分」+ mapper 边界还原、枚举 String 存 + `@hnhall/shared` 字面量约束、列表顺序 `orderKey` 显式维护、数组/视图嵌套走 Json |
 
-**⚠️ Prisma + SQLite 的实测约束（写模型前必读，已实测）**
+### ⚠️ Prisma + SQLite 的实测约束（写模型前必读，已实测）
 
 - **`enum` 可以用，但本项目不用**。实测 `prisma db push` 在 SQLite 上**成功**，落成的 DDL 是普通 `TEXT NOT NULL`——**没有任何取值约束**（`Json` 落成 `JSONB`，同样靠客户端而非数据库校验）。
   不用的真正理由是：**PG 上 Prisma 会建真正的 enum 类型**，两个 provider 的 DDL 因此分叉，将来切库更麻烦。加上项目既有规范就是「枚举用 snake_case 字符串字面量联合类型」，所以统一 String 存、约束留在 `@hnhall/shared`。
@@ -93,13 +93,13 @@
 > **踩坑记录（重要）**：曾把探针 schema 放在 `%TEMP%` 里跑 `prisma db push`，报
 > `Schema engine error: SQLite database error / unable to open database file: ./t.db`。
 > 我当时据此判定「SQLite 不支持 Prisma enum」并写进了本文件——**这是错的**，真实原因是
-> **SQLite 连接器无法在临时目录建库**。移到项目内 `server/prisma/` 后 enum / Json / Int 全部成功。
+> **SQLite 连接器无法在临时目录建库**。移到项目内 `services/server/prisma/` 后 enum / Json / Int 全部成功。
 > **教训：Prisma 探针必须在项目内 `prisma/` 目录做，且报错要连 stderr 一起看（我曾用 Select-String 把真正的错误行过滤掉了）。**
 
-**质量工具**
+## 质量工具
 
 | 工具 | 用途 | 状态 |
-|---|---|---|
+| --- | --- | --- |
 | `tsc --noEmit`（`npm run lint`） | 类型正确性门禁（R1） | ✅ |
 | **ESLint 10 flat config**（`npm run lint:eslint`） | 代码质量（未用变量、显式 any、hooks 规则）；分工：**格式归 Prettier，类型归 tsc** | ✅ 已接入（`eslint.config.js` + `.prettierrc.json`；`react-hooks/set-state-in-effect` 因保留原型行为降级为 warn，接入测试框架后重构） |
 | **Prettier**（`npm run format` / `format:check`） | 格式化（整仓已做一次基线格式化） | ✅ 已接入 |
@@ -110,7 +110,7 @@
 ⚠️ 实测本机 **pip 在 Python 3.14 上会静默死循环**（零输出烧 CPU 数十分钟），换 uv 秒装——不要再用 pip 装本项目依赖。
 ⚠️ 根目录 devDependencies 里的 typescript（6.x）是 **ESLint 解析器引擎**（typescript-eslint 依赖编译器 API，TS 7 没有）；各工作区构建用的 TS 版本不受影响（admin 嵌套 7.x）。
 
-**依赖与安装（已实测）**
+## 依赖与安装（已实测）
 
 - 根目录用 npm workspaces 统一安装；**R1/R2 已实测通过**：`npm run lint` 与 `npm run build` 在 admin 与 server 两个工作区均 exit 0
 - 历史坑（均已修复，勿重犯）：
@@ -130,7 +130,7 @@
 ```bash
 npm run dev:server   # 启动统一后端（NestJS，端口 3000，watch 模式）
 npm run dev:admin    # 启动企业后台前端（Vite，端口 5173，/api 代理到 3000）
-npm run dev:mall     # 启动 C 端商城前端（Vite，端口 5174，/api 代理到 3000）
+npm run dev:user     # 启动 C 端用户小程序（Taro watch 编译，产物用微信开发者工具打开 apps/user/dist）
 npm run dev:technician  # 技师端 Taro watch 编译（产物用微信开发者工具打开 apps/technician/dist）
 npm run dev:ai       # 启动 AI 智能代理层（uvicorn，端口 8100；需先配置 services/ai/.env）
 npm run dev          # = dev:server
@@ -143,7 +143,7 @@ npm start            # 生产模式启动后端（需先 build）
 
 只针对单个工作区：`npm run build -w @hnhall/server`
 
-**开发期前端不直连后端**：`apps/admin`（5173）与 `apps/mall`（5174）都通过 Vite 把 `/api` 代理到 `http://127.0.0.1:3000`（可用 `API_PROXY_TARGET` 覆盖，见各自 `vite.config.ts`）。旧的一体化 `tsx server.ts`（Express + Vite middleware）已废弃并删除。
+**开发期前端不直连后端**：`apps/admin`（5173）通过 Vite 把 `/api` 代理到 `http://127.0.0.1:3000`（可用 `API_PROXY_TARGET` 覆盖，见 `vite.config.ts`）；技师端与用户端小程序经微信开发者工具直连统一后端。旧的一体化 `tsx server.ts`（Express + Vite middleware）已废弃并删除。
 
 ## 项目角色
 
@@ -177,7 +177,7 @@ npm start            # 生产模式启动后端（需先 build）
 
 - ❌ **R1 类型**：`npm run lint`（`tsc --noEmit`）非 0 error；新增未说明的 `@ts-ignore` / `as any` / 隐式 any
 - ❌ **R2 构建**：`npm run build` 失败，或 `npm start` 白屏、控制台有未捕获异常
-- ❌ **R3 契约**：改接口未同步 `types` + `server` + 全部调用方；已发布字段破坏性变更
+- ❌ **R3 契约**：改接口未同步 `types` + `services/server` + 全部调用方；已发布字段破坏性变更
 - ❌ **R4 数据真实**：Mock/假数据落库；生产走 Mock；真实手机号/身份证/证件原件进入仓库（须脱敏 `138****7819`）
 - ❌ **R5 合规（最高；适用范围 = 接口 / 服务端实现）**：
   - 许可证校验未在服务端实现（须覆盖**有效期**、**许可经营范围与作业类型匹配**、发证机关）
@@ -203,7 +203,7 @@ npm start            # 生产模式启动后端（需先 build）
 - ❌ **R9 测试阈值**：核心逻辑行覆盖 < 80% / 分支 < 70%；Given-When-Then 未 100% 通过；关键 E2E 未 100% 通过
 - ❌ **R10 变更纪律**：提交 `node_modules`/`dist`/`.env`/密钥；绕过 CI 门禁；新增单文件 > 500 行
 
-> **存量违规登记**：R7 要求金额以「分」为整数，但迁入的原型 Mock 数据全为浮点金额（如 `server/src/database/seed-data/technician.seed.ts` 里 `serviceFee: 4200.0`、`netPay: 8671.8`、`taxWithheld: 268.2`）。存储层已全部转「分」落库（含商城域），**接口响应仍按原型返回「元」浮点**（mapper 边界还原），响应层的浮点金额与三套原型数据按「已登记违规」处理，**新增代码仍须合规**；迁移时点见 PROJECT-SPEC 待决策项。
+> **存量违规登记**：R7 要求金额以「分」为整数，但迁入的原型 Mock 数据全为浮点金额（如 `services/server/src/database/seed-data/technician.seed.ts` 里 `serviceFee: 4200.0`、`netPay: 8671.8`、`taxWithheld: 268.2`）。存储层已全部转「分」落库（含商城域），**接口响应仍按原型返回「元」浮点**（mapper 边界还原），响应层的浮点金额与三套原型数据按「已登记违规」处理，**新增代码仍须合规**；迁移时点见 PROJECT-SPEC 待决策项。
 
 ## 代码规范
 
@@ -252,7 +252,7 @@ npm start            # 生产模式启动后端（需先 build）
 
 ## 目录结构
 
-**当前结构（monorepo）**
+## 当前结构（monorepo）
 
 ```text
 hnhall/
@@ -269,40 +269,45 @@ hnhall/
 │   │       │   └── supply-chain/ amoeba-settlement/ system-settings/
 │   │       ├── main.tsx · index.css      # 挂载入口 / 唯一样式入口（@theme token）
 │   │       └── services/api.ts           # 唯一数据访问层
-│   └── mall/                    # C 端 · 农资自营商城（自 E:\repo\zymall 并入，Vite 8 + React 19）
-│       ├── index.html · vite.config.ts（端口 5174）· tsconfig.json · package.json · metadata.json
+│   ├── technician/              # 技师端（Taro 4.3 + React 18 微信小程序）
+│   │   ├── config/ · babel.config.js · postcss.config.cjs · project.config.json
+│   │   └── src/
+│   │       ├── app.tsx · app.config.ts   # 入口 / 全局配置
+│   │       ├── pages/index/              # 入口页 → TechnicianWorkspace 容器
+│   │       ├── services/api.ts           # Taro.request 封装（基址 /api/tech）
+│   │       └── components/               # 业务视图（OrderHallView / PrescriptionBuilderView 等）
+│   └── user/                    # C 端用户小程序（Taro 4.3 + React 18；原 H5 商城自 E:\repo\zymall 并入后转小程序）
+│       ├── config/ · babel.config.js · postcss.config.cjs · project.config.json
 │       └── src/
-│           ├── App.tsx                   # 根组件：底部 Tab（首页/上门/溯源/我的）+ 全局状态
-│           ├── main.tsx · index.css      # 挂载入口 / 唯一样式入口
-│           ├── components/               # HomeTab / DoorstepTab / ScanModal / CartDrawer / TraceResultModal 等
-│           ├── data/mockData.ts          # ⚠️ api.ts 乐观 fallback 的本地兜底（存量缺陷，待整改）
-│           ├── utils/traceUtils.ts       # 前端本地验真引擎（fallback 用）
-│           └── services/api.ts           # 唯一数据访问层
+│           ├── app.tsx · app.config.ts   # 入口 / 全局配置
+│           ├── pages/index/              # 入口页 → MallWorkspace 容器
+│           ├── components/               # HomeView / BookingView / TraceVerify / OrdersView 等
+│           └── services/api.ts           # Taro.request 封装
 ├── packages/
 │   └── shared/                  # 跨端领域类型真源（@hnhall/shared）
 │       └── src/{index.ts, types/{index,technician-view,mall-view}.ts}
-├── server/                      # 统一后端（NestJS）
-│   ├── prisma/                          # Prisma schema（v0 原型形状，17 张模型）+ 迁移 + 本地 dev.db
-│   ├── test/                            # 迁移回归夹具（api-baseline.json + mall 两份）
-│   ├── tsconfig.json · nest-cli.json · package.json · .env.example
-│   └── src/
-│       ├── main.ts · app.module.ts · health.controller.ts
-│       ├── prisma/                      # PrismaService / PrismaModule
-│       ├── database/                    # 数据访问层（service → 仓储 → Prisma）
-│       │   ├── repositories/            # 按域拆分：admin-* / technician-* / audit / supply / settlement / mall
-│       │   ├── seed-data/               # 原型 Mock 种子（admin / admin-operations / technician / mall，逐字迁入）
-│       │   ├── seed.ts · seed-mall.ts   # 幂等播种入口（按 R10 拆分）
-│       │   └── mappers.ts · json.ts     # 分↔元换算 / Json 列转换
-│       └── modules/                     # 按业务域：controller（HTTP 形状）→ *.service.ts（业务逻辑）→ 仓储
-│           ├── dashboard/               # /api/stats
-│           ├── order/                   # /api/orders/*        + /api/tech/orders/*
-│           ├── technician/              # /api/technicians/*   + /api/tech/technician
-│           ├── qualification/           # /api/audits/*
-│           ├── supply-chain/            # /api/supply-chain/*  + /api/tech/pesticides/*
-│           ├── amoeba/                  # /api/amoeba/*        + /api/tech/amoeba/*
-│           ├── system/                  # /api/sync/ministry   + /api/tech/health
-│           └── mall/                    # C 端商城：/api/{products,trace,bookings,orders,health,weather}
 ├── services/
+│   ├── server/                  # 统一后端（NestJS）：controller → service → 仓储 三层
+│   │   ├── prisma/                      # Prisma schema（v0 原型形状，17 张模型）+ 迁移 + 本地 dev.db
+│   │   ├── test/                        # 迁移回归夹具（api-baseline.json + mall 两份）
+│   │   ├── tsconfig.json · nest-cli.json · package.json · .env.example
+│   │   └── src/
+│   │       ├── main.ts · app.module.ts · health.controller.ts
+│   │       ├── prisma/                  # PrismaService / PrismaModule
+│   │       ├── database/                # 数据访问层（service → 仓储 → Prisma）
+│   │       │   ├── repositories/        # 按域拆分：admin-* / technician-* / audit / supply / settlement / mall
+│   │       │   ├── seed-data/           # 原型 Mock 种子（admin / admin-operations / technician / mall，逐字迁入）
+│   │       │   ├── seed.ts · seed-mall.ts   # 幂等播种入口（按 R10 拆分）
+│   │       │   └── mappers.ts · json.ts # 分↔元换算 / Json 列转换
+│   │       └── modules/                 # 按业务域：controller（HTTP 形状）→ *.service.ts（业务逻辑）→ 仓储
+│   │           ├── dashboard/           # /api/stats
+│   │           ├── order/               # /api/orders/*        + /api/tech/orders/*
+│   │           ├── technician/          # /api/technicians/*   + /api/tech/technician
+│   │           ├── qualification/       # /api/audits/*
+│   │           ├── supply-chain/        # /api/supply-chain/*  + /api/tech/pesticides/*
+│   │           ├── amoeba/              # /api/amoeba/*        + /api/tech/amoeba/*
+│   │           ├── system/              # /api/sync/ministry   + /api/tech/health
+│   │           └── mall/                # C 端用户端：/api/{products,trace,bookings,orders,health,weather}
 │   └── ai/                      # AI 智能代理层（Python，独立进程，端口 8100）
 │       ├── pyproject.toml · README.md · .env.example
 │       ├── app/
@@ -317,17 +322,17 @@ hnhall/
 └── scripts/                     # 工具脚本（回归基线、烟测、dev-ai 启动器、问卷生成等）
 ```
 
-**目标（演进方向）**
+## 目标（演进方向）
 
 ```text
 apps/admin/src/          # 已按上图 feature 化（views/ 已删除）；shared/ 待有共享 hooks/utils 时再建
 
-apps/technician/         # 技师端 Taro 小程序（🔶 构建与接口接线完成，真机验证待做）
+apps/technician/ · apps/user/   # 两个 Taro 小程序（构建与接口接线完成，真机验证待做）
 
-server/src/modules/      # NestJS 业务模块（✅ controller → service → 仓储 三层；数据已落 Prisma 仓储）
+services/server/src/modules/   # NestJS 业务模块（✅ controller → service → 仓储 三层；数据已落 Prisma 仓储）
 └── dashboard/ order/ technician/ qualification/ supply-chain/ amoeba/ system/ mall/
 
-services/ai/             # ✅ AI 智能代理层已建成（Python / FastAPI / LangChain；能力边界见上表）
+services/ai/                   # ✅ AI 智能代理层已建成（Python / FastAPI / LangChain；能力边界见上表）
 
 tests/                   # unit / integration / e2e（工作区各自 tests/）
 docs/                    # 0_index / 1_common / 2_pc_* / 9_data_dict / ui/demos
@@ -338,7 +343,7 @@ docs/                    # 0_index / 1_common / 2_pc_* / 9_data_dict / ui/demos
 **迁移规则**：
 
 - 前端新增业务模块一律放 `apps/admin/src/features/<域>/`
-- 后端新增接口一律放 `server/src/modules/<域>/`；`legacy/` 已清空删除
+- 后端新增接口一律放 `services/server/src/modules/<域>/`；`legacy/` 已清空删除
 - **后端改结构必须留回归证据**：改前 `capture-api-baseline`，改后 `compare-api-baseline` 必须 0 处不一致；写操作跑 `smoke-mutations`
 - 迁移**按模块逐个进行，禁止一次性大搬迁**（本仓库已有一次例外：monorepo 结构重组，属一次性结构变更而非业务迁移）
 
@@ -393,29 +398,29 @@ docs/                    # 0_index / 1_common / 2_pc_* / 9_data_dict / ui/demos
 
 ### 当前进度
 
-| 步骤           | 状态                        | 说明                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| -------------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1 环境准备     | ✅ 完成                     | 技术栈已定稿；依赖已安装（并修复 ERESOLVE 冲突）；`lint` / `build` 实测通过；本文件已完成                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| 2 Skill准备    | ✅ 完成                     | 4 个 Skill 就位于 `.dsh/skills/`（含 frontend-design）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| 3 需求探讨     | 🔶 产出完成，**待客户确认** | 已产出四份 v0.1：[字段可信度审计](docs/requirements/field-audit.md)、[产品定义卡片](docs/requirements/product-card.md)、[阿米巴分红制度建议](docs/requirements/amoeba-policy.md)、[信息架构](docs/requirements/information-architecture.md)。**但其中的「确认」均来自开发方判断，客户尚未确认**；已整理[分层提问计划](docs/requirements/discovery-questions.md)（**按需求深度分层：第一层「需求本质」7 题，附微信话术；上一层不确认不问下一层**）；65 题[客户确认问卷](docs/requirements/client-confirmation-questionnaire.md) 已降级为内部备查。**第一层答复到位前，第 4 步 PRD 不得定稿。** |
-| 4 PRD编写      | ⬜ 未开始                   | 待产出 `docs/0_index.md` 等分文档                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| 5 UI风格确定   | ⬜ 未开始                   | 待产出 3 套 HTML demo 并投票                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| 6 前端开发     | 🔶 顺序倒置                 | 已有 6 个模块界面 + C 端商城界面（`apps/mall`），且 admin 已完成 feature 化拆分；但**先于第 3–5 步产出**，无可对照的 `2_pc_*.md`                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| 7 测试驱动验收 | 🔶 部分到位                 | 已接入：ESLint + Prettier、`services/ai` pytest 契约测试、接口层回归基线 + smoke 脚本；Vitest / Playwright 仍未接入，页面体检未开始                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| 步骤 | 状态 | 说明 |
+| --- | --- | --- |
+| 1 环境准备 | ✅ 完成 | 技术栈已定稿；依赖已安装（并修复 ERESOLVE 冲突）；`lint` / `build` 实测通过；本文件已完成 |
+| 2 Skill准备 | ✅ 完成 | 4 个 Skill 就位于 `.dsh/skills/`（含 frontend-design） |
+| 3 需求探讨 | 🔶 产出完成，**待客户确认** | 已产出四份 v0.1：[字段可信度审计](docs/requirements/field-audit.md)、[产品定义卡片](docs/requirements/product-card.md)、[阿米巴分红制度建议](docs/requirements/amoeba-policy.md)、[信息架构](docs/requirements/information-architecture.md)。**但其中的「确认」均来自开发方判断，客户尚未确认**；已整理[分层提问计划](docs/requirements/discovery-questions.md)（**按需求深度分层：第一层「需求本质」7 题，附微信话术；上一层不确认不问下一层**）；65 题[客户确认问卷](docs/requirements/client-confirmation-questionnaire.md) 已降级为内部备查。**第一层答复到位前，第 4 步 PRD 不得定稿。** |
+| 4 PRD编写 | ⬜ 未开始 | 待产出 `docs/0_index.md` 等分文档 |
+| 5 UI风格确定 | ⬜ 未开始 | 待产出 3 套 HTML demo 并投票 |
+| 6 前端开发 | 🔶 顺序倒置 | 已有 6 个模块界面 + C 端用户端界面（`apps/user`），且 admin 已完成 feature 化拆分；但**先于第 3–5 步产出**，无可对照的 `2_pc_*.md` |
+| 7 测试驱动验收 | 🔶 部分到位 | 已接入：ESLint + Prettier、`services/ai` pytest 契约测试、接口层回归基线 + smoke 脚本；Vitest / Playwright 仍未接入，页面体检未开始 |
 
 ### 仓库合并记录（2026-10）
 
 按「技师端并入本项目、后端统一」的决策完成第一阶段：
 
-| 项             | 结果                                                                                                                                                    |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 仓库结构       | 单包 → **npm workspaces monorepo**（`apps/admin` + `packages/shared` + `server`）                                                                       |
-| 企业后台前端   | 原根目录 `src/` 整体 `git mv` 到 `apps/admin/`，**lint / build 实测通过**                                                                               |
-| 类型真源       | 抽出 `packages/shared`（`@hnhall/shared`），admin 的 8 处引用已改，**纯类型、运行期零开销**                                                             |
-| 后端统一       | 新建 `server/`（NestJS），**两套旧 Mock 合并进同一个进程**：后台 16 条（来自本仓库原 `server.ts`）+ 技师端 16 条（来自 `E:\repo\technicalend\server\`） |
-| 端到端验证     | **32 条路由**：迁移后 GET 15/15 逐字节一致、写操作与错误形状 26 项断言全过、路由表逐条对账无缺失无多余                                                  |
-| legacy 清理    | `server/src/legacy/` 已删除；32 条路由全部落进 `server/src/modules/*`                                                                                   |
-| 原 `server.ts` | 已删除（内容完整迁入，删前逐端点抽查确认）                                                                                                              |
+| 项 | 结果 |
+| --- | --- |
+| 仓库结构 | 单包 → **npm workspaces monorepo**（`apps/admin` + `packages/shared` + `services/server`） |
+| 企业后台前端 | 原根目录 `src/` 整体 `git mv` 到 `apps/admin/`，**lint / build 实测通过** |
+| 类型真源 | 抽出 `packages/shared`（`@hnhall/shared`），admin 的 8 处引用已改，**纯类型、运行期零开销** |
+| 后端统一 | 新建 `services/server/`（NestJS），**两套旧 Mock 合并进同一个进程**：后台 16 条（来自本仓库原 `server.ts`）+ 技师端 16 条（来自 `E:\repo\technicalend\server\`） |
+| 端到端验证 | **32 条路由**：迁移后 GET 15/15 逐字节一致、写操作与错误形状 26 项断言全过、路由表逐条对账无缺失无多余 |
+| legacy 清理 | `services/server/src/legacy/` 已删除；32 条路由全部落进 `services/server/src/modules/*` |
+| 原 `server.ts` | 已删除（内容完整迁入，删前逐端点抽查确认） |
 
 **技师端前端未并入**：决策为改用 Taro 微信小程序，原 H5 版（17 个组件）留在 `E:\repo\technicalend` 作**移植参照**，不作为代码并入——并入即为死代码。
 
@@ -423,19 +428,19 @@ docs/                    # 0_index / 1_common / 2_pc_* / 9_data_dict / ui/demos
 
 按「C 端 H5（农资自营商城与防伪溯源）并入本项目、后端继续统一」完成第二阶段：
 
-| 项         | 结果                                                                                                                                                                                                                                                              |
-| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 前端       | `E:\repo\zymall` 整体迁入 `apps/mall/`（Vite 8 + React 19 H5，端口 5174，`/api` 代理到统一后端）；`@hnhall/mall` workspace，`npm run dev:mall` 启动                                                                                                               |
-| 类型真源   | 原型 `src/types.ts` 上收为 `@hnhall/shared` 的 `types/mall-view.ts`；`Product` 因命名过于泛化更名 `MallProduct`，其余（`TraceVerificationResult` / `ServiceBooking` / `CartItem` 等）原名保留；11 处引用改完                                                      |
-| 后端       | 9 条路由迁入 `server/src/modules/mall/`（products · trace · bookings · orders · health · weather），仓储 `mall.repository.ts`，数据落 Prisma（4 张 v0 模型：MallProduct / TraceLedgerEntry / ServiceBooking / MallOrder），种子 `seed-data/mall.seed.ts` 逐字迁入 |
-| 数据库     | 新增迁移 `20261004064611_mall_view_models`（SQLite 实测通过）；种子幂等可重放                                                                                                                                                                                     |
-| 端到端验证 | mall profile **8/8 逐字节一致**（含 `POST /api/trace/verify` 正品码 / 异常码两条确定性用例）；core profile **15/15 一致**（原 32 条路由无回归）；`smoke-mutations` **34 项断言全过、0 失败**；`npm run lint` / `npm run build` 全工作区 exit 0                    |
-| 夹具与脚本 | `server/test/api-baseline-mall-{legacy,nestjs}.json` 入库留证；`capture-api-baseline.mjs` 增加 `mall` profile（GET 逐字节 + 确定性 verify POST），`smoke-mutations.mjs` 增加商城 404/400 形状与写操作段                                                           |
-| 依赖清理   | `@google/genai` / `motion` / `dotenv` / `esbuild` / `autoprefixer` 零引用**未迁**；`lucide-react` 因商城 15 处真实引用随迁（仅 `apps/mall`，根目录维持零引用结论）                                                                                                |
+| 项 | 结果 |
+| --- | --- |
+| 前端 | `E:\repo\zymall` 整体迁入 `apps/user/`（原 Vite H5 端口 5174，2026-10 转 Taro 小程序，`/api` 直连统一后端）；`@hnhall/user` workspace，`npm run dev:user` 启动 |
+| 类型真源 | 原型 `src/types.ts` 上收为 `@hnhall/shared` 的 `types/mall-view.ts`；`Product` 因命名过于泛化更名 `MallProduct`，其余（`TraceVerificationResult` / `ServiceBooking` / `CartItem` 等）原名保留；11 处引用改完 |
+| 后端 | 9 条路由迁入 `services/server/src/modules/mall/`（products · trace · bookings · orders · health · weather），仓储 `mall.repository.ts`，数据落 Prisma（4 张 v0 模型：MallProduct / TraceLedgerEntry / ServiceBooking / MallOrder），种子 `seed-data/mall.seed.ts` 逐字迁入 |
+| 数据库 | 新增迁移 `20261004064611_mall_view_models`（SQLite 实测通过）；种子幂等可重放 |
+| 端到端验证 | mall profile **8/8 逐字节一致**（含 `POST /api/trace/verify` 正品码 / 异常码两条确定性用例）；core profile **15/15 一致**（原 32 条路由无回归）；`smoke-mutations` **34 项断言全过、0 失败**；`npm run lint` / `npm run build` 全工作区 exit 0 |
+| 夹具与脚本 | `services/server/test/api-baseline-mall-{legacy,nestjs}.json` 入库留证；`capture-api-baseline.mjs` 增加 `mall` profile（GET 逐字节 + 确定性 verify POST），`smoke-mutations.mjs` 增加商城 404/400 形状与写操作段 |
+| 依赖清理 | `@google/genai` / `motion` / `dotenv` / `esbuild` / `autoprefixer` 零引用**未迁**；`lucide-react` 因商城 15 处真实引用随迁（仅 `apps/user`，根目录维持零引用结论） |
 
 **并入时的存量缺陷登记（原样保留、代码头已加注、待整改）**：
 
-- `apps/mall/src/services/api.ts` 所有请求失败时**静默降级到本地 Mock**（乐观 fallback、无降级提示）——与「错误处理」规范冲突，整改需先确认产品交互
+- `apps/user/src/services/api.ts` 所有请求失败时**静默降级到本地 Mock**（乐观 fallback、无降级提示）——与「错误处理」规范冲突，整改需先确认产品交互
 - `MallProduct.badgeColor` 存的是 **Tailwind 类名**（展示与数据耦合）；种子与响应的手机号未脱敏（如 `138-7589-9921`）；接口金额为「元」浮点（存储层已按 R7 存「分」，mapper 边界还原——与后台域同一登记口径）
 - 台账 `queryTime` / 验真 `firstQueryTime` 为展示字符串（非 ISO 8601）；`GET /api/weather` 为静态示意值
 - 原型 id（`LED-` / `BK-` / `DD-` + Date.now 尾数）在内存数组里允许重复，落库成主键后不允许——仓储生成「未被占用的最近刻度」，格式与原型一致（见 `mall.repository.ts` 头注释）
@@ -447,7 +452,7 @@ docs/                    # 0_index / 1_common / 2_pc_* / 9_data_dict / ui/demos
 同日完成四项架构改进（每项独立验证）：
 
 | 项 | 内容 | 验证证据 |
-|---|---|---|
+| --- | --- | --- |
 | **admin feature 化** | `views/` 删除；App.tsx → `src/app/`（含 layout/ + Feedback 反馈组件），7 个视图按 Tab/面板拆入 `features/<域>/`（每域 index.tsx + components/）；四个超标大文件（1191/960/953/692 行）全部拆解 | 纯结构性搬移（JSX 逐字搬、状态留容器、props 下传）；重构后 core 基线 15/15、mall 基线 8/8 逐字节一致；R10 全仓达标 |
 | **server service 层** | 12 个 controller 全部瘦身：业务逻辑下沉 `*.service.ts`，形成 **controller（HTTP 形状）→ service（业务逻辑）→ 仓储（数据）** 三层；404/400 形状与提示文案原样随逻辑迁移 | 双基线回归 0 不一致 + smoke 34 项断言 0 失败 |
 | **ESLint + Prettier** | ESLint 10 flat config（typescript-eslint + react-hooks，格式规则让位 Prettier）；修复 41 处存量问题（未用导入、显式 any → 领域类型、无用赋值）；整仓 Prettier 基线格式化 | `lint:eslint` 0 error（2 个 set-state-in-effect 为有意 warn，见「质量工具」）；tsc 全过 |
@@ -457,14 +462,12 @@ docs/                    # 0_index / 1_common / 2_pc_* / 9_data_dict / ui/demos
 
 ### 技师端 Taro 脚手架记录（2026-10-05）
 
-外部会话完成脚手架：Taro 4.3（React 18）+ weapp-tailwindcss，视图自 `E:epo	echnicalend` 移入 `apps/technician/src`；入口 `src/app.tsx` → `pages/index` → 容器 `TechnicianWorkspace.tsx`（已用 `@tarojs/components` 改写），类型经 `src/types.ts` 转出 `@hnhall/shared`。
+外部会话完成脚手架：Taro 4.3（React 18）+ weapp-tailwindcss，视图自 `E:\repo\technicalend` 移入 `apps/technician/src`；入口 `src/app.tsx` → `pages/index` → 容器 `TechnicianWorkspace.tsx`（已用 `@tarojs/components` 改写），类型经 `src/types.ts` 转出 `@hnhall/shared`。
 
 本会话打通构建链，修复项（按 R2 验收：`npx taro build --type weapp` 成功产出 `dist/`）：
 
 | 修复 | 说明 |
-|---|---|
-| tsconfig | `moduleResolution: node10` 与 `baseUrl` 已被 TS6/7 移除（AGENTS.md 登记过的坑）→ `bundler`；paths 钉死本工作区 React 18（根提升的是 19，避免 TS2786 ×1010） |
-| babel | 补 `babel.config.js`（`babel-preset-taro` + ts）与 babel 7 全家桶（新版 preset 会带进 @babel/core 8，与 Taro 的 peer ^7 冲突） |
+| --- | --- |
 | taro-loader | 显式进 devDependencies 并落到根（与被提升的 webpack5-runner 相邻，否则 loader 解析失败） |
 | tailwind 提升位 | **根目录 tailwindcss 锚定为 v3**（admin/mall 的 v4 由 npm 嵌进各自工作区）——否则 weapp 工具链 postinstall/构建解析到 v4 崩溃；admin/mall 构建已复验无回归 |
 | 配置收敛 | 删除 weapp-tw init 生成的重复 ESM 配置；`postcss.config.cjs` 用字符串键（老版 postcss-load-config 不认函数键） |
@@ -477,9 +480,9 @@ docs/                    # 0_index / 1_common / 2_pc_* / 9_data_dict / ui/demos
 ### 已知遗留（不阻塞当前步骤）
 
 - **最高优先：需求待与客户确认**——第 3 步的四份文档全部建立在开发方判断之上。按 [`discovery-questions.md`](docs/requirements/discovery-questions.md) 的**第一层 7 题**逐层推进（微信沟通、讨论阶段）；第一层答复到位后才进第二层。**客户确认前，第 4 步 PRD 不得定稿。**
-- **`apps/technician`（Taro 小程序）待建**：参照 `E:\repo\technicalend` 的 H5 版移植
-- **`apps/mall`（C 端）现为 H5 形态**：是否 Taro 小程序化待定；并入时登记的存量缺陷（乐观 fallback、badgeColor、未脱敏手机号等）见「C 端商城并入记录」
-- ~~PostgreSQL 未安装~~ → **方案已定**：开发用 **SQLite + Prisma**（`server/prisma/dev.db`，连通性已实测），生产目标 PostgreSQL，**本地不安装 PG**。切 PG 时要改 `provider` → 重跑迁移 → 重新 generate client
+- **`apps/technician`（Taro 小程序）**：构建与接口接线已完成，真机验证待做
+- **`apps/user`（C 端用户端 Taro 小程序）**：已由 H5 转小程序，并入时登记的存量缺陷（乐观 fallback、badgeColor、未脱敏手机号等）见「C 端商城并入记录」
+- ~~PostgreSQL 未安装~~ → **方案已定**：开发用 **SQLite + Prisma**（`services/server/prisma/dev.db`，连通性已实测），生产目标 PostgreSQL，**本地不安装 PG**。切 PG 时要改 `provider` → 重跑迁移 → 重新 generate client
 - **技师端 H5 版带着已被否定的虚构字段**，移植时必须清理：`ServiceOrder.distanceKm` / `gpsCoords`（无定位能力）、`AmoebaStat.prescriptionDividend` / `teamReferralDividend` / `equityPreDraw`（分红仅来自服务收入）、`incentiveMultiplier`（档位系数待定）
 - **技师端 H5 有 1 个文件超红线**：`PrescriptionBuilderView.tsx` 517 行（R10 上限 500）——移植时按功能拆分
 - 第 6 步顺序倒置的处置（追认 or 返工）——见 PROJECT-SPEC 待决策项

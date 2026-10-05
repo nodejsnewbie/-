@@ -20,7 +20,7 @@ export default tseslint.config(
       '.dsh/**',
       'services/ai/.venv/**',
       '**/__pycache__/**',
-      'server/prisma/migrations/**',
+      'services/server/prisma/migrations/**',
     ],
   },
 
@@ -29,7 +29,7 @@ export default tseslint.config(
 
   // CJS 配置文件（babel/tailwind 等用 module.exports；需要显式声明 CommonJS 语境）
   {
-    files: ['**/*.config.cjs', 'apps/technician/babel.config.js', 'apps/technician/tailwind.config.js'],
+    files: ['**/*.config.cjs', 'apps/*/babel.config.js', 'apps/*/tailwind.config.js'],
     languageOptions: {
       sourceType: 'commonjs',
       globals: { ...globals.node },
@@ -71,7 +71,7 @@ export default tseslint.config(
 
   // 服务端运行于 Node（NestJS），补充 node 全局
   {
-    files: ['server/src/**/*.ts', 'server/test/**/*.ts', 'scripts/**/*.mjs'],
+    files: ['services/server/src/**/*.ts', 'services/server/test/**/*.ts', 'scripts/**/*.mjs'],
     languageOptions: {
       globals: {
         ...globals.node,

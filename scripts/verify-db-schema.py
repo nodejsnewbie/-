@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """独立核对 SQLite 实际表结构（不依赖 Prisma CLI 的自述）。
 
-用法: python scripts/verify-db-schema.py server/prisma/dev.db
+用法: python scripts/verify-db-schema.py services/server/prisma/dev.db
 """
 import sqlite3
 import sys
@@ -9,7 +9,7 @@ import sys
 sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 from pathlib import Path
 
-db = Path(sys.argv[1] if len(sys.argv) > 1 else "server/prisma/dev.db")
+db = Path(sys.argv[1] if len(sys.argv) > 1 else "services/server/prisma/dev.db")
 if not db.exists():
     print(f"库不存在: {db}")
     raise SystemExit(1)
