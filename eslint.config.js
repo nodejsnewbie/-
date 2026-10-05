@@ -27,6 +27,15 @@ export default tseslint.config(
   // JS / 脚本（scripts/*.mjs 等）
   js.configs.recommended,
 
+  // CJS 配置文件（babel/tailwind 等用 module.exports；需要显式声明 CommonJS 语境）
+  {
+    files: ['**/*.config.cjs', 'apps/technician/babel.config.js', 'apps/technician/tailwind.config.js'],
+    languageOptions: {
+      sourceType: 'commonjs',
+      globals: { ...globals.node },
+    },
+  },
+
   // TS / TSX（不启用 type-aware 规则：类型问题由 tsc 门禁负责，避免双份慢检查）
   ...tseslint.configs.recommended.map((config) => ({
     ...config,

@@ -21,3 +21,6 @@ coverage/
 __pycache__/
 *.pyc
 .pytest_cache/
+
+# SWC 构建缓存（apps/technician）
+.swc/
