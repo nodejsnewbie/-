@@ -380,6 +380,8 @@ docs/                    # 0_index / 1_common / 2_pc_* / 9_data_dict / ui/demos
 
 本项目遵循 **CC 全流程指南的 7 步开发法**。指南原文面向 Claude Code，其中称本文件为 `CLAUDE.md`、技能目录为 `.claude/skills/`；本项目实际使用 DSH（DeepSeek Harness），故等价采用 `AGENTS.md` 与 `.dsh/skills/`——**仅命名不同，方法不变**。
 
+> ⚠️ **本项目为单人 + AI 编码代理开发**：上述 7 步与研发角色表原为多人团队设计，靠「角色之间的制衡」兜底；单人下这层制衡天然不存在。故把多角色**折叠**成「你 + AI」按时间轮值、用机械闸门补回制衡的可执行流程，见 [`docs/collaboration-framework.md`](docs/collaboration-framework.md)（人机分工边界 / 单人多角色轮值与换挡检查点 / Git 与提交·PR 节奏·合并门禁）。**该文档不新增红线、不改口径**，与本文冲突时以本文为准并同步修订。
+
 1. **环境准备**：技术栈选型 + 创建项目 + 安装依赖 + 编写项目宪法（本文件）
 2. **Skill准备**：安装 product-manager、requirement-writer、frontend-design、testai 到 `.dsh/skills/`
 3. **需求探讨**：由 agent 扮演产品经理，主动追问需求细节，输出产品定义卡片和信息架构
