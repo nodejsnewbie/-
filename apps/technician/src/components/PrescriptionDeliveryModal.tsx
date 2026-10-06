@@ -1,4 +1,5 @@
 import { showAlert } from '../utils/platform';
+import { formatCents } from '../utils/format';
 import { Button, Canvas, Text, View } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import React, { useEffect, useRef, useState } from 'react';
@@ -105,8 +106,8 @@ export const PrescriptionDeliveryModal: React.FC<PrescriptionDeliveryModalProps>
     }
   };
 
-  const totalDrugCost = order.prescriptionDrugs.reduce((acc, d) => acc + d.price * d.qty, 0);
-  const grandTotal = totalDrugCost + (order.laborFee || 60);
+  const totalDrugCost = order.prescriptionDrugs.reduce((acc, d) => acc + d.priceCents * d.qty, 0);
+  const grandTotal = totalDrugCost + (order.laborFeeCents || 6000);
 
   return (
     <View className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/80 backdrop-blur-sm select-none">
@@ -212,7 +213,7 @@ export const PrescriptionDeliveryModal: React.FC<PrescriptionDeliveryModalProps>
                   <View className="text-right">
                     <Text className="font-bold font-mono text-on-surface">× {d.qty}瓶</Text>
                     <View className="text-[11px] font-mono text-primary font-bold">
-                      ¥{(d.price * d.qty).toFixed(2)}
+                      ¥{formatCents(d.priceCents * d.qty)}
                     </View>
                   </View>
                 </View>
@@ -224,7 +225,7 @@ export const PrescriptionDeliveryModal: React.FC<PrescriptionDeliveryModalProps>
           <View className="flex items-center justify-between text-xs pt-1 px-1">
             <Text className="text-on-surface-variant">药剂+勘验合计金额</Text>
             <Text className="text-base font-extrabold text-primary font-mono">
-              ¥{grandTotal.toFixed(2)}
+              ¥{formatCents(grandTotal)}
             </Text>
           </View>
 

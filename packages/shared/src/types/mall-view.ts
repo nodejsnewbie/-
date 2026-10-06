@@ -9,8 +9,9 @@
  *   （后台管溯源码量与批次，商城管售卖展示），尚未统一——同 `WorkOrder` / `ServiceOrder`。
  * - `MallProduct.badgeColor` 已从类型移除（展示与数据解耦）：后端接口仍可能返回
  *   兼容字段，但前端不再把它当样式类使用（颜色由前端按 badge 语义映射，见 HomeView）。
- * - 金额字段（`price` / `totalAmount`）在接口契约里是「元」浮点（原型口径）；
- *   存储层一律为「分」整数（R7），换算只在 server 的 mappers 层。
+ * - 金额字段一律为「分」整数（R7，接口契约与存储层同口径）：`price`→`priceCents`、
+ *   `originalPrice`→`originalPriceCents`、`totalAmount`→`totalAmountCents`。
+ *   展示层用 `formatCents` 还原为「元」，换算只在各前端展示层，后端不再返回浮点元。
  */
 
 /// 商城在售商品（C 端视图）。原型类型名 `Product`，因过于泛化在共享包内改名 `MallProduct`。
@@ -26,8 +27,8 @@ export interface MallProduct {
   licenseNo: string;
   /** 生产批次 */
   batchNo: string;
-  price: number;
-  originalPrice?: number;
+  priceCents: number;
+  originalPriceCents?: number;
   soldCount: string;
   image: string;
   traceCode: string;
@@ -62,6 +63,7 @@ export interface CartItem {
 export interface SupplyChainStep {
   step: string;
   title: string;
+  /** ISO 8601（+08:00）；溯源链节点发生时刻 */
   timestamp: string;
   location: string;
   operator: string;
@@ -79,17 +81,20 @@ export interface TraceVerificationResult {
   productionApprovalNo: string;
   standardNo: string;
   batchNo: string;
+  /** ⚠️ 已知遗留：中文历法装饰串（'2024年08月20日'），非纯 ISO，接真实溯源数据时规范化 */
   productionDate: string;
+  /** ⚠️ 已知遗留：带装饰（'2026年08月19日 (保质期24个月)'），非纯 ISO */
   expiryDate: string;
   manufacturer: string;
   factoryAddress: string;
   activeIngredient: string;
   packageSpec: string;
   queryCount: number;
-  /** ⚠️ 原型为展示字符串（含中文描述后缀），非 ISO 8601 */
+  /** ⚠️ 已知遗留：含中文括注装饰（'… (首次官方验真)' / '… (已被系统锁定)'），非纯 ISO */
   firstQueryTime: string;
   distributionStation: string;
 
+  /** ⚠️ 已知遗留：中文历法装饰串（'2024年09月05日 10:15'），非纯 ISO */
   storeInDate: string;
   chain: SupplyChainStep[];
   /** 仅异常码（warning 分支）返回 */
@@ -103,7 +108,7 @@ export interface TraceLedgerEntry {
   productName: string;
   batchNo: string;
   licenseNo: string;
-  /** ⚠️ 原型为展示字符串（'2024-10-01 09:41' / toLocaleString），非 ISO 8601 */
+  /** ISO 8601（+08:00）；农户扫码查验时刻（原为 toLocaleString 展示串，已规范化） */
   queryTime: string;
   status: 'passed' | 'warning';
   station: string;
@@ -133,7 +138,7 @@ export interface ServiceBooking {
   timeSlot: string;
   station: string;
   contactName: string;
-  /** ⚠️ 存量缺陷：原型手机号未脱敏（如 '138-7589-9921'） */
+  /** 手机号须脱敏（红线 R4：脱敏无例外），格式如 '138****9921'，禁止明文入库/出参 */
   contactPhone: string;
   plotAddress: string;
   associatedProducts: string[];
@@ -168,8 +173,8 @@ export interface MallOrderSubmission {
   /** ISO 8601 */
   createdAt: string;
   items: CartItem[];
-  /** 元（原型契约；存储为分） */
-  totalAmount: number;
+  /** 分整数（R7）；展示层 formatCents 还原为元 */
+  totalAmountCents: number;
   /** 满 200 元赠免费配方服务（原型口径） */
   eligibleForFreeRecipe: boolean;
   deliveryStation: string;

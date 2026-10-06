@@ -1,6 +1,7 @@
 import { Button, Image, Text, View } from '@tarojs/components';
 import React from 'react';
 import type { ServiceOrder } from '../types';
+import { formatDateTime } from '../utils/format';
 
 /**
  * 电子处方开立页的自包含展示区块（自 PrescriptionBuilderView 按 R10 拆出，JSX 原样迁入）。
@@ -30,43 +31,26 @@ export const PrescriptionHeaderCard: React.FC<PrescriptionHeaderCardProps> = ({ 
               {order.title}
             </Text>
           </View>
-          <Button
-            onClick={() => showAlert(`正在启动实地高精度地块导航至：${order.locationName}`)}
-            className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-surface-container text-primary text-xs font-bold active:scale-95 transition-transform cursor-pointer"
-          >
-            <Text className="material-symbols-outlined text-[17px]">navigation</Text>
-            <Text>导航</Text>
-          </Button>
         </View>
 
-        {/* Real-time Location Verification Box */}
-        <View className="mt-3 p-2.5 rounded-lg bg-surface-container-low flex items-center justify-between">
-          <View className="flex items-center gap-2 min-w-0">
-            <View className="w-7 h-7 rounded-full bg-primary-container text-white flex items-center justify-center shrink-0">
-              <Text className="material-symbols-outlined text-[15px]">where_to_vote</Text>
-            </View>
-            <View className="min-w-0">
-              <Text className="text-xs font-bold text-on-surface truncate">
-                {order.locationName}
-              </Text>
-              <Text className="text-[11px] text-secondary font-mono">
-                {order.gpsCoords} · 现场签到已校验
-              </Text>
-            </View>
+        {/* 服务地址（本期无定位能力，仅作地址展示，到达与验收以现场实拍+农户签字为准） */}
+        <View className="mt-3 p-2.5 rounded-lg bg-surface-container-low flex items-center gap-2">
+          <View className="w-7 h-7 rounded-full bg-primary-container text-white flex items-center justify-center shrink-0">
+            <Text className="material-symbols-outlined text-[15px]">location_on</Text>
           </View>
-          <Text
-            className="material-symbols-outlined text-secondary text-[20px] shrink-0 material-symbols-filled"
-            title="GPS防篡改已核验"
-          >
-            verified
-          </Text>
+          <View className="min-w-0 flex-1">
+            <Text className="text-xs font-bold text-on-surface truncate">
+              {order.locationName}
+            </Text>
+            <Text className="text-[11px] text-on-surface-variant">
+              到达与验收以现场实拍及农户签字为准（本期无定位核验）
+            </Text>
+          </View>
         </View>
       </View>
     </View>
   );
 };
-
-import { showAlert } from '../utils/platform';
 
 interface EvidenceGalleryProps {
   order: ServiceOrder;
@@ -114,7 +98,7 @@ export const EvidenceGallery: React.FC<EvidenceGalleryProps> = ({
               />
               <View className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-1">
                 <Text className="block text-[8px] text-white font-mono leading-tight">
-                  {photo.time}
+                  {formatDateTime(photo.time)}
                 </Text>
                 <Text className="block text-[9px] text-secondary-container font-semibold truncate">
                   {photo.label}

@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import type { TraceVerificationResult } from '../types';
 import { api } from '../services/api';
 import { showAlert } from '../utils/platform';
+import { formatDateTime } from '../utils/format';
 
 interface TraceVerifyProps {
   initialCode: string;
@@ -116,7 +117,7 @@ export const TraceVerify: React.FC<TraceVerifyProps> = ({ initialCode, onClose }
                       </Text>
                       <View className="min-w-0">
                         <Text className="text-[11px] font-bold text-on-surface block">
-                          {step.title} · {step.timestamp}
+                          {step.title} · {formatDateTime(step.timestamp)}
                         </Text>
                         <Text className="text-[10px] text-on-surface-variant block">{step.detail}</Text>
                       </View>

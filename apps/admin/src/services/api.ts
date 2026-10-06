@@ -22,11 +22,11 @@ export async function fetchStats() {
       licensedRate: number;
       dronePilots: number;
       seniorAgronomists: number;
-      supplyTraceSales: number;
+      supplyTraceSalesCents: number;
       prescriptionRate: number;
       complianceRate: number;
       prescriptionBatches: number;
-      amoebaBonusPool: number;
+      amoebaBonusPoolCents: number;
       qualifiedAmoebaTeams: number;
       avgArrivalHours: number;
       fulfillmentRatePct: number;
@@ -140,9 +140,8 @@ export async function rejectAudit(id: string, action: 'reject' | 'revision') {
   return res.json() as Promise<{ success: boolean; message: string; audit: AuditApplication }>;
 }
 
-export async function fetchSupplyChain(params?: { fleeStatus?: string; search?: string }) {
+export async function fetchSupplyChain(params?: { search?: string }) {
   const query = new URLSearchParams();
-  if (params?.fleeStatus) query.set('fleeStatus', params.fleeStatus);
   if (params?.search) query.set('search', params.search);
 
   const res = await fetch(`/api/supply-chain?${query.toString()}`);
@@ -154,16 +153,6 @@ export async function fetchSupplyChain(params?: { fleeStatus?: string; search?: 
     monthScanCount: number;
     fleeAlertsCount: number;
   }>;
-}
-
-export async function freezeProductBatch(batchNumber: string) {
-  const res = await fetch('/api/supply-chain/freeze-batch', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ batchNumber }),
-  });
-  if (!res.ok) throw new Error('熔断操作失败');
-  return res.json() as Promise<{ success: boolean; message: string }>;
 }
 
 export async function generateBatchCodes(count: number = 50000) {

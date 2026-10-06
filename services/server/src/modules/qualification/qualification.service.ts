@@ -60,7 +60,7 @@ export class QualificationService {
         menteeCount: 0,
         independentMentees: 0,
         teamMonthlyOutput: 0,
-        mentorshipAllowance: 200,
+        mentorshipAllowanceCents: 20000,
         gridName: audit.targetGrid,
         coverageRadius: 15,
         boundEquipment: '大疆 T60',

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import type { AmoebaSettlement as AmoebaSettlementType } from '@hnhall/shared';
 
+import { formatCents } from '../../utils/format.ts';
+
 interface AmoebaSettlementProps {
   settlements: AmoebaSettlementType[];
   onBatchSettle: () => Promise<void>;
@@ -19,17 +21,13 @@ export const AmoebaSettlement: React.FC<AmoebaSettlementProps> = ({
   const [showTaxExportModal, setShowTaxExportModal] = useState(false);
   const [showMatrixRuleModal, setShowMatrixRuleModal] = useState(false);
 
-  const grossTotal = settlements.reduce((acc, s) => acc + s.grossAmount, 0);
-  const taxTotal = settlements.reduce((acc, s) => acc + s.taxWithheld, 0);
-  const netTotal = settlements.reduce((acc, s) => acc + s.netPay, 0);
+  const grossTotalCents = settlements.reduce((acc, s) => acc + s.grossAmountCents, 0);
+  const taxTotalCents = settlements.reduce((acc, s) => acc + s.taxWithheldCents, 0);
+  const netTotalCents = settlements.reduce((acc, s) => acc + s.netPayCents, 0);
 
   const handleBatchSettleClick = async () => {
     const confirmed = window.confirm(
-      `本次将发起 42 位阿米巴合伙人本月佣金总计 ¥${grossTotal.toLocaleString('zh-CN', {
-        minimumFractionDigits: 2,
-      })} 的银行直联代发结算（已依法代扣个税 ¥${taxTotal.toFixed(2)}，实付 ¥${netTotal.toFixed(
-        2,
-      )}），是否确认提交中国农业银行专户？`,
+      `本次将发起 42 位阿米巴合伙人本月佣金总计 ¥${formatCents(grossTotalCents)} 的银行直联代发结算（已依法代扣个税 ¥${formatCents(taxTotalCents)}，实付 ¥${formatCents(netTotalCents)}），是否确认提交中国农业银行专户？`,
     );
 
     if (!confirmed) return;
@@ -121,7 +119,7 @@ export const AmoebaSettlement: React.FC<AmoebaSettlementProps> = ({
                 当期应发合伙人总额
               </div>
               <div className="text-[20px] font-extrabold text-on-surface font-mono">
-                ¥{grossTotal.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
+                ¥{formatCents(grossTotalCents)}
               </div>
             </div>
           </div>
@@ -135,7 +133,7 @@ export const AmoebaSettlement: React.FC<AmoebaSettlementProps> = ({
                 代扣代缴经营个税 (依法代扣)
               </div>
               <div className="text-[20px] font-extrabold text-primary font-mono">
-                ¥{taxTotal.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
+                ¥{formatCents(taxTotalCents)}
               </div>
             </div>
           </div>
@@ -149,7 +147,7 @@ export const AmoebaSettlement: React.FC<AmoebaSettlementProps> = ({
                 银行清算实付总金额
               </div>
               <div className="text-[20px] font-extrabold text-secondary font-mono">
-                ¥{netTotal.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
+                ¥{formatCents(netTotalCents)}
               </div>
             </div>
           </div>
@@ -200,25 +198,25 @@ export const AmoebaSettlement: React.FC<AmoebaSettlementProps> = ({
                   </td>
 
                   <td className="p-3 text-right font-mono font-medium text-[12px]">
-                    ¥{item.serviceFee.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
+                    ¥{formatCents(item.serviceFeeCents)}
                   </td>
                   <td className="p-3 text-right font-mono font-bold text-primary text-[12px]">
-                    ¥{item.prescriptionBonus.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
+                    ¥{formatCents(item.prescriptionBonusCents)}
                   </td>
                   <td className="p-3 text-right font-mono font-medium text-[12px]">
-                    ¥{item.mentorshipBonus.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
+                    ¥{formatCents(item.mentorshipBonusCents)}
                   </td>
                   <td className="p-3 text-right font-mono text-on-surface-variant text-[12px]">
-                    ¥{item.equityDividend.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
+                    ¥{formatCents(item.equityDividendCents)}
                   </td>
                   <td className="p-3 text-right font-mono font-bold text-on-surface text-[13px]">
-                    ¥{item.grossAmount.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
+                    ¥{formatCents(item.grossAmountCents)}
                   </td>
                   <td className="p-3 text-right font-mono text-error font-medium text-[12px]">
-                    -¥{item.taxWithheld.toFixed(2)}
+                    -¥{formatCents(item.taxWithheldCents)}
                   </td>
                   <td className="p-3 text-right font-mono font-extrabold text-secondary text-[13px]">
-                    ¥{item.netPay.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
+                    ¥{formatCents(item.netPayCents)}
                   </td>
                   <td className="p-3 text-center">
                     <button
@@ -286,7 +284,7 @@ export const AmoebaSettlement: React.FC<AmoebaSettlementProps> = ({
                     实发净额 (已代扣税)
                   </span>
                   <span className="text-[22px] font-extrabold text-secondary font-mono">
-                    ¥{selectedPartner.netPay.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
+                    ¥{formatCents(selectedPartner.netPayCents)}
                   </span>
                 </div>
               </div>
@@ -297,13 +295,13 @@ export const AmoebaSettlement: React.FC<AmoebaSettlementProps> = ({
                     1. 上门飞防/植保作业提成 (按亩核算)
                   </span>
                   <span className="font-mono font-medium text-on-surface">
-                    ¥{selectedPartner.serviceFee.toFixed(2)}
+                    ¥{formatCents(selectedPartner.serviceFeeCents)}
                   </span>
                 </div>
                 <div className="flex justify-between py-2">
                   <span className="text-on-surface-variant">2. 溯源处方药剂销售利润分红</span>
                   <span className="font-mono font-bold text-primary">
-                    ¥{selectedPartner.prescriptionBonus.toFixed(2)}
+                    ¥{formatCents(selectedPartner.prescriptionBonusCents)}
                   </span>
                 </div>
                 <div className="flex justify-between py-2">
@@ -311,24 +309,24 @@ export const AmoebaSettlement: React.FC<AmoebaSettlementProps> = ({
                     3. 徒弟裂变技术指导奖金 (网格团队)
                   </span>
                   <span className="font-mono font-medium text-on-surface">
-                    ¥{selectedPartner.mentorshipBonus.toFixed(2)}
+                    ¥{formatCents(selectedPartner.mentorshipBonusCents)}
                   </span>
                 </div>
                 <div className="flex justify-between py-2">
                   <span className="text-on-surface-variant">4. 阿米巴年终资本股权分红预提</span>
                   <span className="font-mono font-medium text-on-surface">
-                    ¥{selectedPartner.equityDividend.toFixed(2)}
+                    ¥{formatCents(selectedPartner.equityDividendCents)}
                   </span>
                 </div>
                 <div className="flex justify-between py-2 font-bold text-on-surface border-t border-surface-container">
                   <span>应发佣金总计</span>
                   <span className="font-mono text-tertiary text-[14px]">
-                    ¥{selectedPartner.grossAmount.toFixed(2)}
+                    ¥{formatCents(selectedPartner.grossAmountCents)}
                   </span>
                 </div>
                 <div className="flex justify-between py-2 text-error font-medium">
                   <span>企业依法代扣个人劳务经营所得税 (3%)</span>
-                  <span className="font-mono">-¥{selectedPartner.taxWithheld.toFixed(2)}</span>
+                  <span className="font-mono">-¥{formatCents(selectedPartner.taxWithheldCents)}</span>
                 </div>
               </div>
 

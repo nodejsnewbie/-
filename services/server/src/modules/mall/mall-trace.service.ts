@@ -67,7 +67,7 @@ export class MallTraceService {
         productName: '【疑似假劣】未备案产品',
         batchNo: '异常批次',
         licenseNo: '无效代码',
-        queryTime: new Date().toLocaleString('zh-CN'),
+        queryTime: new Date().toISOString(),
         status: 'warning',
         station: '非官方自营渠道',
       });
@@ -108,7 +108,7 @@ export class MallTraceService {
         {
           step: '1',
           title: '原厂赋码与合格检定',
-          timestamp: '2024-08-20 09:12',
+          timestamp: '2024-08-20T09:12:00+08:00',
           location: '生产企业洁净灌装车间',
           operator: '质检合规员 QC-12',
           detail: '原装电子溯源码赋码成功，留样及出厂检验全项合格。',
@@ -117,7 +117,7 @@ export class MallTraceService {
         {
           step: '2',
           title: '国家农药追溯总库互联入库',
-          timestamp: '2024-08-22 14:00',
+          timestamp: '2024-08-22T14:00:00+08:00',
           location: '农业农村部国家农药追溯中心服务器',
           operator: '系统自动核对',
           detail: '一瓶一码已通过国标农药数据校验，数据不可篡改。',
@@ -126,7 +126,7 @@ export class MallTraceService {
         {
           step: '3',
           title: '实体自营站核收入库',
-          timestamp: '2024-09-05 10:15',
+          timestamp: '2024-09-05T10:15:00+08:00',
           location: '长沙县安沙农资自营直供中心',
           operator: '直营站长 陈伟农',
           detail: '冷藏恒温库位入库上架，三证齐全，专车直供。',
@@ -135,7 +135,7 @@ export class MallTraceService {
         {
           step: '4',
           title: '终端种植户扫码验真',
-          timestamp: `${dateStr} ${hhmm}`,
+          timestamp: now.toISOString(),
           location: '用户当前田间终端',
           operator: '种植户扫码',
           detail: '官方认证原厂正品！享48小时内持证农艺师田间复诊保障。',
@@ -150,7 +150,7 @@ export class MallTraceService {
       productName: matchedProd.name,
       batchNo: matchedProd.batchNo,
       licenseNo: matchedProd.licenseNo,
-      queryTime: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${hhmm}`,
+      queryTime: now.toISOString(),
       status: 'passed',
       station: '长沙县安沙农资自营直供中心',
     });

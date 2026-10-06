@@ -117,8 +117,8 @@ export const api = {
   signDeliveryNote: async (
     orderId: string,
     signature: string
-  ): Promise<{ order: ServiceOrder; awardedIncome: number; newTotalIncome: number }> => {
-    return request<{ order: ServiceOrder; awardedIncome: number; newTotalIncome: number }>(
+  ): Promise<{ order: ServiceOrder; awardedIncomeCents: number; newTotalIncomeCents: number }> => {
+    return request<{ order: ServiceOrder; awardedIncomeCents: number; newTotalIncomeCents: number }>(
       `/orders/${encodeURIComponent(orderId)}/sign`,
       {
         method: 'POST',
@@ -154,8 +154,9 @@ export const api = {
   withdraw: async (
     amount: number,
     channel: string
-  ): Promise<{ withdrawn: number; channel: string; remainingBalance: number }> => {
-    return request<{ withdrawn: number; channel: string; remainingBalance: number }>(
+  ): Promise<{ withdrawnCents: number; channel: string; remainingBalanceCents: number }> => {
+    // 入参 amount 为「元」（后端 ×100 转分做整数比较与落库）；响应金额字段为「分」整数（R7）
+    return request<{ withdrawnCents: number; channel: string; remainingBalanceCents: number }>(
       '/amoeba/withdraw',
       {
         method: 'POST',

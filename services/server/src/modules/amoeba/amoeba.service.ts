@@ -121,18 +121,18 @@ export class TechnicianAmoebaService {
       id: `tx-wd-${Date.now()}`,
       title: `合伙人收益提现至${channelName}`,
       sub: '税后收益 · 资金银行直管专户实时直付',
-      amount: -numAmount,
+      amountCents: -amountCents,
       type: 'mixed',
-      time: '刚刚',
+      time: new Date().toISOString(),
     });
 
     return {
       success: true,
       message: `提现申请已受理，¥${numAmount.toFixed(2)} 已划拨至${channelName}`,
       data: {
-        withdrawn: numAmount,
+        withdrawnCents: amountCents,
         channel: channelName,
-        remainingBalance: stat.totalMonthIncome,
+        remainingBalanceCents: stat.totalMonthIncomeCents,
       },
     };
   }

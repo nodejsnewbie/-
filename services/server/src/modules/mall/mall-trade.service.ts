@@ -53,19 +53,19 @@ export class MallTradeService {
       throw new BadRequestException({ success: false, error: '清单商品不能为空' });
     }
 
-    // 金额口径：原型直接以「元」浮点累加（存量缺陷，R7 登记在案）；
-    // 落库转「分」，响应仍按原型返回「元」浮点。
-    const totalAmount = items.reduce(
-      (sum: number, item: CartItem) => sum + item.product.price * item.quantity,
+    // 金额口径（R7）：全程「分」整数累加，杜绝浮点误差。
+    // 满 200 元赠免费配方 → 20000 分。响应返回 totalAmountCents（分）。
+    const totalAmountCents = items.reduce(
+      (sum: number, item: CartItem) => sum + item.product.priceCents * item.quantity,
       0,
     );
-    const eligibleForFreeRecipe = totalAmount >= 200;
+    const eligibleForFreeRecipe = totalAmountCents >= 20000;
     const createdAt = new Date().toISOString();
 
     const orderId = await this.orders.create({
       createdAt,
       items,
-      totalAmountCents: Math.round(totalAmount * 100),
+      totalAmountCents,
       eligibleForFreeRecipe,
       deliveryStation: station || '长沙县安沙农资自营直供中心',
       deliveryEstimate: '最快 30 分钟送到田边',
@@ -78,7 +78,7 @@ export class MallTradeService {
         orderId,
         createdAt,
         items,
-        totalAmount,
+        totalAmountCents,
         eligibleForFreeRecipe,
         deliveryStation: station || '长沙县安沙农资自营直供中心',
         deliveryEstimate: '最快 30 分钟送到田边',

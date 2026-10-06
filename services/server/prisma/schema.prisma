@@ -316,8 +316,9 @@ model ServiceOrder {
   urgencyBg   String?
 
   /// dispatching | accepted | in_progress | prescribed | completed
-  status           String
-  dispatchTimeText String
+  status      String
+  /// ISO 8601（+08:00）；派发真实时刻（原 dispatchTimeText 存伪相对串，已改名规范化）
+  dispatchedAt String
 
   /// ⚠️ 无真实数据来源（无地图服务），示意值
   distanceKm Float
@@ -408,7 +409,7 @@ model AmoebaStat {
   serviceTasksCount      Int
 
   groupTargetRate    Float
-  groupBaselineCents Int
+  groupBaseline      Int
   groupTierBonus     String
 }
 

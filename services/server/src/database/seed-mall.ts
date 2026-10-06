@@ -26,8 +26,8 @@ export async function seedMall(prisma: PrismaClient, mall: MallSeed): Promise<vo
         tags: json(p.tags),
         licenseNo: p.licenseNo,
         batchNo: p.batchNo,
-        priceCents: cents(p.price, `MallProduct.${p.id}.price`),
-        originalPriceCents: centsOpt(p.originalPrice),
+        priceCents: p.priceCents,
+        originalPriceCents: p.originalPriceCents ?? null,
         soldCount: p.soldCount,
         image: p.image,
         traceCode: p.traceCode,
@@ -86,17 +86,4 @@ export async function seedMall(prisma: PrismaClient, mall: MallSeed): Promise<vo
       },
     });
   }
-}
-
-/** 元 → 分（与 seed.ts 同口径）。必填金额缺值直接报错，不静默写 0。 */
-function cents(value: number | undefined | null, label: string): number {
-  if (value === undefined || value === null) {
-    throw new Error(`[seed] 必填金额缺失: ${label}`);
-  }
-  return Math.round(value * 100);
-}
-
-/** 元 → 分，可选字段。 */
-function centsOpt(value: number | undefined | null): number | null {
-  return value === undefined || value === null ? null : Math.round(value * 100);
 }

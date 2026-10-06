@@ -1,6 +1,8 @@
 import React from 'react';
 import type { Technician } from '@hnhall/shared';
 
+import { formatCents } from '../../../utils/format.ts';
+
 interface TechnicianTableProps {
   filteredTechs: Technician[];
   selectedIds: string[];
@@ -195,7 +197,7 @@ export const TechnicianTable: React.FC<TechnicianTableProps> = ({
                         月团队产值 ¥{(tech.teamMonthlyOutput / 10000).toFixed(2)} 万
                       </span>
                       <span className="text-on-surface-variant text-[10px]">
-                        师傅管理津贴: ¥{tech.mentorshipAllowance}/月
+                        师傅管理津贴: ¥{formatCents(tech.mentorshipAllowanceCents)}/月
                       </span>
                     </div>
                   </td>

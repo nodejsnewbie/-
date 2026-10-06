@@ -1,4 +1,5 @@
 import { showAlert } from '../utils/platform';
+import { formatCents } from '../utils/format';
 import { Button, Image, Text, Textarea, View } from '@tarojs/components';
 import React, { useState } from 'react';
 import { ServiceOrder, PrescriptionDrug } from '../types';
@@ -39,7 +40,7 @@ export const PrescriptionBuilderView: React.FC<PrescriptionBuilderViewProps> = (
       '建议立刻排水晒田2天抑制菌核扩散，傍晚无风时进行超低容量雾化飞防作业，药后4小时内若遇大雨需按半量重喷。'
   );
   const [drugs, setDrugs] = useState<PrescriptionDrug[]>(order.prescriptionDrugs || []);
-  const [laborFee] = useState<number>(order.laborFee || 60.00);
+  const [laborFeeCents] = useState<number>(order.laborFeeCents || 6000);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -81,9 +82,9 @@ export const PrescriptionBuilderView: React.FC<PrescriptionBuilderViewProps> = (
     onUpdateOrder({ ...order, prescriptionDrugs: nextDrugs });
   };
 
-  const totalDrugCost = drugs.reduce((acc, d) => acc + d.price * d.qty, 0);
+  const totalDrugCost = drugs.reduce((acc, d) => acc + d.priceCents * d.qty, 0);
   const totalItemCount = drugs.reduce((acc, d) => acc + d.qty, 0);
-  const grandTotal = totalDrugCost + laborFee;
+  const grandTotal = totalDrugCost + laborFeeCents;
 
   // Elderly voice broadcast synthesizer
   const handlePlayVoice = () => {
@@ -275,7 +276,7 @@ export const PrescriptionBuilderView: React.FC<PrescriptionBuilderViewProps> = (
                     <View className="flex items-start justify-between gap-1">
                       <Text className="font-bold text-xs text-on-surface truncate">{drug.name}</Text>
                       <Text className="font-mono text-xs font-bold text-on-surface shrink-0">
-                        ¥{drug.price.toFixed(2)}
+                        ¥{formatCents(drug.priceCents)}
                       </Text>
                     </View>
                     <Text className="text-[11px] text-on-surface-variant line-clamp-1 mt-0.5">
@@ -320,19 +321,19 @@ export const PrescriptionBuilderView: React.FC<PrescriptionBuilderViewProps> = (
             <View className="flex justify-between items-center text-xs text-on-surface-variant mb-1">
               <Text>合规药剂金额小计 (共{totalItemCount}件)</Text>
               <Text className="font-mono text-on-surface font-semibold">
-                ¥{totalDrugCost.toFixed(2)}
+                ¥{formatCents(totalDrugCost)}
               </Text>
             </View>
             <View className="flex justify-between items-center text-xs text-on-surface-variant mb-2">
               <Text>农艺技师现场勘验与处方工时费</Text>
               <Text className="font-mono text-on-surface font-semibold">
-                ¥{laborFee.toFixed(2)}
+                ¥{formatCents(laborFeeCents)}
               </Text>
             </View>
             <View className="flex justify-between items-center pt-2 border-t border-outline-variant/30 text-xs text-on-surface">
               <Text className="font-bold">现场服务预估总额</Text>
               <Text className="text-[18px] text-tertiary font-extrabold font-mono">
-                ¥{grandTotal.toFixed(2)}
+                ¥{formatCents(grandTotal)}
               </Text>
             </View>
           </View>

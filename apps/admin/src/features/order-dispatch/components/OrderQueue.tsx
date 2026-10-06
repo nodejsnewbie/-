@@ -1,6 +1,8 @@
 import React from 'react';
 import type { WorkOrder } from '@hnhall/shared';
 
+import { formatDateTime } from '../../../utils/format.ts';
+
 interface OrderQueueProps {
   filteredOrders: WorkOrder[];
   selectedOrderId: string;
@@ -72,7 +74,7 @@ export const OrderQueue: React.FC<OrderQueueProps> = ({
                     )}
                   </div>
                   <span className="text-[11px] text-on-surface-variant mt-1">
-                    报单: {order.reportedTime}{' '}
+                    报单: {formatDateTime(order.reportedTime)}{' '}
                     {order.waitingMinutes > 0 ? `(等待 ${order.waitingMinutes} 分钟)` : ''}
                   </span>
                 </div>

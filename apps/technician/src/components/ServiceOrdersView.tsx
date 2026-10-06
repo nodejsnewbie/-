@@ -1,3 +1,4 @@
+import { formatCents } from '../utils/format';
 import { Button, Text, View } from '@tarojs/components';
 import React, { useState } from 'react';
 import { ServiceOrder } from '../types';
@@ -136,10 +137,10 @@ export const ServiceOrdersView: React.FC<ServiceOrdersViewProps> = ({
                 <View className="flex items-baseline gap-1">
                   <Text className="text-xs text-on-surface-variant">服务费</Text>
                   <Text className="text-base font-extrabold text-primary font-mono">
-                    ¥{order.estimatedFee.toFixed(2)}
+                    ¥{formatCents(order.estimatedFeeCents)}
                   </Text>
                   <Text className="text-[10px] text-amber-700 font-bold ml-1">
-                    (提成 +¥{order.amoebaBonus})
+                    (提成 +¥{formatCents(order.amoebaBonusCents)})
                   </Text>
                 </View>
 

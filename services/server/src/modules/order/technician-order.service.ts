@@ -78,20 +78,11 @@ export class TechnicianOrderService {
       throw new BadRequestException({ success: false, message: '照片数据不可为空' });
     }
 
-    const now = new Date();
-    const timeStr = `${(now.getMonth() + 1).toString().padStart(2, '0')}-${now
-      .getDate()
-      .toString()
-      .padStart(2, '0')} ${now.getHours().toString().padStart(2, '0')}:${now
-      .getMinutes()
-      .toString()
-      .padStart(2, '0')}`;
-
     const newPhoto = {
       id: `ev-${Date.now()}`,
       url,
       label: label || '现场实拍',
-      time: timeStr,
+      time: new Date().toISOString(),
       location: location || order.locationName,
     };
 
@@ -137,27 +128,27 @@ export class TechnicianOrderService {
 
     const updated = await this.orders.update(id, {
       farmerSignature: body.signature,
-      signedAt: new Date().toLocaleString(),
+      signedAt: new Date().toISOString(),
       status: 'completed',
     });
 
     // —— 结算：全程整数「分」运算（红线 R7）——
     const totalDrugsCents = order.prescriptionDrugs.reduce(
-      (acc, d) => acc + Math.round(d.price * 100) * d.qty,
+      (acc, d) => acc + d.priceCents * d.qty,
       0,
     );
     // 处方分润 12%：口径待评审（分红已定为「仅来自服务收入」，见 AGENTS.md 已知遗留）
     const drugBonusCents = Math.round((totalDrugsCents * 12) / 100);
-    const laborFeeCents = Math.round(order.laborFee * 100);
+    const laborFeeCents = order.laborFeeCents;
     const totalIncomeCents = laborFeeCents + drugBonusCents;
 
     await this.earning.insertTransactionFront({
       id: `tx-${Date.now()}`,
       title: `${order.farmerName}水稻病虫害处方交付`,
       sub: `工单费 ¥${(laborFeeCents / 100).toFixed(2)} + 处方分润 ¥${(drugBonusCents / 100).toFixed(2)}`,
-      amount: totalIncomeCents / 100,
+      amountCents: totalIncomeCents,
       type: 'mixed',
-      time: '刚刚',
+      time: new Date().toISOString(),
     });
 
     const stat = await this.earning.accrueIncome({
@@ -170,8 +161,8 @@ export class TechnicianOrderService {
       message: '交割单已正式核签生效，已下发自营仓库出库通知',
       data: {
         order: updated,
-        awardedIncome: totalIncomeCents / 100,
-        newTotalIncome: stat.totalMonthIncome,
+        awardedIncomeCents: totalIncomeCents,
+        newTotalIncomeCents: stat.totalMonthIncomeCents,
       },
     };
   }

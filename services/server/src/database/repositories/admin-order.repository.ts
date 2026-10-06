@@ -79,11 +79,8 @@ export class AdminOrderRepository {
         watermarkTime: patch.watermarkTime,
         watermarkGps: patch.watermarkGps,
         signedAt: patch.signedAt,
-        // 金额：元 → 分（红线 R7）
-        settlementAmountCents:
-          patch.settlementAmount === undefined
-            ? undefined
-            : Math.round(patch.settlementAmount * 100),
+        // 金额：领域模型与库里同为「分」整数，直接透传（R7）
+        settlementAmountCents: patch.settlementAmountCents,
       }),
     });
 

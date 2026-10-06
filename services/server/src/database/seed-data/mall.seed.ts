@@ -1,8 +1,11 @@
 /**
- * C 端商城（农资自营商城）的**种子数据**（原型 Mock，逐字迁入，未改任何一条数据）。
+ * C 端商城（农资自营商城）的**种子数据**（原型 Mock，逐字迁入）。
  *
  * ⚠️ 这不是业务逻辑，只用于初始化数据库。类型取自 `@hnhall/shared`。
- * ⚠️ 含已知存量缺陷（badgeColor 为 Tailwind 类名、手机号未脱敏、浮点金额），原样保留。
+ * ⚠️ 含已知存量缺陷（badgeColor 为 Tailwind 类名、浮点金额），原样保留（已登记违规）。
+ * ⚠️ 手机号：本文件保持原型原样（假号，含分隔符）。脱敏由**服务端出参层**统一实现
+ *    （红线 R4「脱敏无例外」是服务端职责，见 `src/database/mask.ts` 与 `mappers.ts` 的
+ *    `maskPhone`），不在种子里手工写掩码。
  *
  * 金额在本文件里仍是**元（浮点）**，由 `seed.ts` 统一转成「分」入库（红线 R7）。
  *
@@ -23,8 +26,8 @@ export class MallSeed {
       tags: ['一物一码溯源', '官方正品', '水稻纹枯病/稻瘟病特效'],
       licenseNo: 'PD20210892',
       batchNo: '20240901HN',
-      price: 48.0,
-      originalPrice: 56.0,
+      priceCents: 4800,
+      originalPriceCents: 5600,
       soldCount: '已出库 1.2万件',
       image:
         'https://lh3.googleusercontent.com/aida-public/AB6AXuBcU-0kej1VjmMvzv9ZF7Q1mSfCiUd2IHhYvD2ukxDr_pPl1XOTFBUCtfbtqnB-kZ2Hnoy2AWZYf7_jFC3eYAmQ5Tl0q9CBiU-Np7Z-QQ-Fb8eRpkwm5l9nyCKaEL4k1DKzRs-2SAephUTw0vf6nSLEifAqin3areaxTTVincydrIsogwLDxB3aBxM1AneEd8vu1liGK5YVoVW4PR9YcgFCZAQ1lFaYVUB_38g5A3ivuVfBaW8oqeVS',
@@ -50,8 +53,8 @@ export class MallSeed {
       highlightText: '亩均成本省15%',
       licenseNo: 'PD20180431',
       batchNo: '20240815HN',
-      price: 68.0,
-      originalPrice: 79.0,
+      priceCents: 6800,
+      originalPriceCents: 7900,
       soldCount: '已出库 8,920件',
       image:
         'https://lh3.googleusercontent.com/aida-public/AB6AXuAK2OdAQ62scKS4qfIkWd5GQXTTj9yximl6jBnTb3Fo_xi7Z6uj0Z9G5BFcwIoPYdoh74Q-Qm3avzaWYv2A8BvmdrxgThXFlINNwxJqVpn4qxNlrd9znsc1sT9jnI3VvlFD8z28BxKJRL8LA3AAuyJcM1NgiQduf-KMYNyMRezEm-g5OQt9wh1-bGr8y2e_qQ95eBngkVt_2bpPQfidPZhj-dCTCbnYAzcORkjgufYDQqv8R2DYhPfy',
@@ -77,8 +80,8 @@ export class MallSeed {
       highlightText: '实体仓现货直发',
       licenseNo: '农肥(2022)准字第8892号',
       batchNo: '20241002XN',
-      price: 25.0,
-      originalPrice: 32.0,
+      priceCents: 2500,
+      originalPriceCents: 3200,
       soldCount: '已出库 2.4万件',
       image:
         'https://lh3.googleusercontent.com/aida-public/AB6AXuDcL2vMMAi9Exeq1kuJqZiIcdmsM9JfYk2LIWcucXPsXvju0sbMztRE2KNLrKSUzKztqcKqxP9H-5G4289Eb_kspRDj8C3S5QwnQu3qOPtFt9OUqhDJxb0leTI5BFIrcX7q02IAXlKemPZNfwQwg7UznV0i1m-q5PSQAtvn56610EGAhCYDU-hUMiG09JBotC7ECJzUp8teEIk6F15DLt1k5j-omYBfRI4iMKdcQxBMgjfgpMFRAmNm',
@@ -104,8 +107,8 @@ export class MallSeed {
       highlightText: '安沙站极速闪送',
       licenseNo: '适配DJI/XAG全系',
       batchNo: '20240905JX',
-      price: 36.0,
-      originalPrice: 45.0,
+      priceCents: 3600,
+      originalPriceCents: 4500,
       soldCount: '已出库 4,310件',
       image: '',
       traceCode: '2024090588123990145612',
@@ -129,8 +132,8 @@ export class MallSeed {
       tags: ['双向传导', '持效期长达25天'],
       licenseNo: 'PD20200156',
       batchNo: '20240912KN',
-      price: 52.0,
-      originalPrice: 60.0,
+      priceCents: 5200,
+      originalPriceCents: 6000,
       soldCount: '已出库 6,800件',
       image:
         'https://lh3.googleusercontent.com/aida-public/AB6AXuBcU-0kej1VjmMvzv9ZF7Q1mSfCiUd2IHhYvD2ukxDr_pPl1XOTFBUCtfbtqnB-kZ2Hnoy2AWZYf7_jFC3eYAmQ5Tl0q9CBiU-Np7Z-QQ-Fb8eRpkwm5l9nyCKaEL4k1DKzRs-2SAephUTw0vf6nSLEifAqin3areaxTTVincydrIsogwLDxB3aBxM1AneEd8vu1liGK5YVoVW4PR9YcgFCZAQ1lFaYVUB_38g5A3ivuVfBaW8oqeVS',
@@ -155,8 +158,8 @@ export class MallSeed {
       tags: ['触杀型灭生性', '柑橘茶园定向除草'],
       licenseNo: 'PD20191288',
       batchNo: '20240828NY',
-      price: 32.0,
-      originalPrice: 38.0,
+      priceCents: 3200,
+      originalPriceCents: 3800,
       soldCount: '已出库 1.5万件',
       image:
         'https://lh3.googleusercontent.com/aida-public/AB6AXuAK2OdAQ62scKS4qfIkWd5GQXTTj9yximl6jBnTb3Fo_xi7Z6uj0Z9G5BFcwIoPYdoh74Q-Qm3avzaWYv2A8BvmdrxgThXFlINNwxJqVpn4qxNlrd9znsc1sT9jnI3VvlFD8z28BxKJRL8LA3AAuyJcM1NgiQduf-KMYNyMRezEm-g5OQt9wh1-bGr8y2e_qQ95eBngkVt_2bpPQfidPZhj-dCTCbnYAzcORkjgufYDQqv8R2DYhPfy',
@@ -182,7 +185,7 @@ export class MallSeed {
       productName: '华农植保·75%肟菌·戊唑醇悬浮剂',
       batchNo: '20240901HN',
       licenseNo: 'PD20210892',
-      queryTime: '2024-10-01 09:41',
+      queryTime: '2024-10-01T09:41:00+08:00',
       status: 'passed',
       station: '长沙县安沙农资自营直供中心',
     },
@@ -192,7 +195,7 @@ export class MallSeed {
       productName: '极飞特约·氯虫苯甲酰胺 200g/L 浓悬浮剂',
       batchNo: '20240815HN',
       licenseNo: 'PD20180431',
-      queryTime: '2024-10-01 09:42',
+      queryTime: '2024-10-01T09:42:00+08:00',
       status: 'passed',
       station: '长沙县安沙农资自营直供中心',
     },

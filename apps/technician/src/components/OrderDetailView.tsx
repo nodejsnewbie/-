@@ -1,4 +1,5 @@
 import { showAlert } from '../utils/platform';
+import { formatCents } from '../utils/format';
 import { Button, Image, Text, View } from '@tarojs/components';
 import React, { useState, useEffect } from 'react';
 import { ServiceOrder } from '../types';
@@ -95,7 +96,7 @@ export const OrderDetailView: React.FC<OrderDetailViewProps> = ({
               <View className="flex items-baseline gap-1 mt-0.5">
                 <Text className="text-xs text-primary font-bold">¥</Text>
                 <Text className="text-[26px] text-primary font-extrabold tracking-tight">
-                  {order.estimatedFee.toFixed(2)}
+                  {formatCents(order.estimatedFeeCents)}
                 </Text>
               </View>
             </View>
@@ -105,7 +106,7 @@ export const OrderDetailView: React.FC<OrderDetailViewProps> = ({
                 阿米巴合伙提成 ({order.bonusPercent}%)
               </Text>
               <View className="text-[17px] text-amber-950 font-bold mt-0.5">
-                + ¥{order.amoebaBonus.toFixed(2)}
+                + ¥{formatCents(order.amoebaBonusCents)}
               </View>
             </View>
           </View>
@@ -180,15 +181,7 @@ export const OrderDetailView: React.FC<OrderDetailViewProps> = ({
                 <Text className="material-symbols-outlined text-[14px]">content_copy</Text>
                 <Text>复制地址</Text>
               </Button>
-              <Button
-                onClick={() =>
-                  showAlert(`正在启动高德网格地图导航至：${order.locationName} (${order.gpsCoords})`)
-                }
-                className="flex items-center gap-1 text-secondary font-semibold text-xs bg-surface-container px-2.5 py-1 rounded-md active:bg-surface-container-high transition-colors cursor-pointer"
-              >
-                <Text className="material-symbols-outlined text-[14px]">navigation</Text>
-                <Text>网格高德导航</Text>
-              </Button>
+              {/* 本期无地图/定位能力（AGENTS 非目标 + 注意事项2），不提供导航入口，仅支持复制地址人工前往 */}
             </View>
           </View>
 
@@ -282,8 +275,8 @@ export const OrderDetailView: React.FC<OrderDetailViewProps> = ({
             {order.costBreakdown.map((item, index) => (
               <View key={index} className="flex items-center justify-between">
                 <Text>{item.item}</Text>
-                {item.amount > 0 ? (
-                  <Text className="text-on-surface font-semibold">¥{item.amount.toFixed(2)}</Text>
+                {item.amountCents > 0 ? (
+                  <Text className="text-on-surface font-semibold">¥{formatCents(item.amountCents)}</Text>
                 ) : (
                   <Text className="italic text-outline">{item.note}</Text>
                 )}

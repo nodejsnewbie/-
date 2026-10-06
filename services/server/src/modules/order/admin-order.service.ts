@@ -83,7 +83,7 @@ export class AdminOrderService {
       id: `event-${Date.now()}`,
       type: 'dispatch',
       title: '工单已下发并派工',
-      timestamp: '刚刚',
+      timestamp: new Date().toISOString(),
       summary: `${tech.name} 已认领工单 ${order.id}，预计 20 分钟内抵达`,
       technicianName: tech.name,
       location: order.location,
@@ -104,7 +104,7 @@ export class AdminOrderService {
       ...(step === 3
         ? {
             watermarkVerified: true,
-            watermarkTime: new Date().toLocaleTimeString(),
+            watermarkTime: new Date().toISOString(),
             status: 'checked_in' as const,
             statusText: '现场打卡完成',
           }
@@ -120,8 +120,8 @@ export class AdminOrderService {
         ? {
             status: 'completed' as const,
             statusText: '已验收结单',
-            signedAt: new Date().toLocaleTimeString(),
-            settlementAmount: 450.0,
+            signedAt: new Date().toISOString(),
+            settlementAmountCents: 45000,
           }
         : {}),
     });

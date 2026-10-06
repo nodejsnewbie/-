@@ -106,7 +106,8 @@ async function main() {
     'POST /api/supply-chain/freeze-batch',
     await call('POST', '/api/supply-chain/freeze-batch', { batchNumber: 'HN-20240315-A' }),
     200,
-    ['success', 'message'],
+    // R6 预留接口：如实回执能力未启用，不再谎报冻结成功（键集含 capability 占位）
+    ['success', 'batchNumber', 'capability', 'message'],
   );
   check('POST /api/sync/ministry', await call('POST', '/api/sync/ministry', {}), 200, [
     'success',
@@ -245,7 +246,7 @@ async function main() {
   check(
     'POST /api/orders',
     await call('POST', '/api/orders', {
-      items: [{ product: { id: 'prod-1', price: 48 }, quantity: 2 }],
+      items: [{ product: { id: 'prod-1', priceCents: 4800 }, quantity: 2 }],
       station: '烟测站',
     }),
     200,

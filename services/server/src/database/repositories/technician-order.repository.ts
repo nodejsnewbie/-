@@ -47,7 +47,7 @@ export class TechnicianOrderRepository {
         urgencyTag: patch.urgencyTag,
         urgencyBg: patch.urgencyBg,
         status: patch.status,
-        dispatchTimeText: patch.dispatchTimeText,
+        dispatchedAt: patch.dispatchedAt,
         distanceKm: patch.distanceKm,
         farmerName: patch.farmerName,
         farmerPhone: patch.farmerPhone,
@@ -58,10 +58,10 @@ export class TechnicianOrderRepository {
         cropScale: patch.cropScale,
         farmerQuote: patch.farmerQuote,
         farmerPhotos: patch.farmerPhotos === undefined ? undefined : jsonIn(patch.farmerPhotos),
-        estimatedFeeCents: centsOrUndef(patch.estimatedFee),
-        amoebaBonusCents: centsOrUndef(patch.amoebaBonus),
+        estimatedFeeCents: patch.estimatedFeeCents,
+        amoebaBonusCents: patch.amoebaBonusCents,
         bonusPercent: patch.bonusPercent,
-        laborFeeCents: centsOrUndef(patch.laborFee),
+        laborFeeCents: patch.laborFeeCents,
         costBreakdown: patch.costBreakdown === undefined ? undefined : jsonIn(patch.costBreakdown),
         fieldEvidencePhotos:
           patch.fieldEvidencePhotos === undefined ? undefined : jsonIn(patch.fieldEvidencePhotos),
@@ -100,10 +100,6 @@ export class TechnicianOrderRepository {
   }
 }
 
-function centsOrUndef(value: number | undefined): number | undefined {
-  return value === undefined ? undefined : Math.round(value * 100);
-}
-
 function drugRow(
   serviceOrderId: string,
   d: ServiceOrder['prescriptionDrugs'][number],
@@ -117,7 +113,7 @@ function drugRow(
     drugId: d.id,
     name: d.name,
     spec: d.spec,
-    priceCents: Math.round(d.price * 100),
+    priceCents: d.priceCents,
     qty: d.qty,
     code: d.code,
     tag: d.tag,

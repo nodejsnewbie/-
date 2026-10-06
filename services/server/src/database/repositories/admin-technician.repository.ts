@@ -57,10 +57,7 @@ export class AdminTechnicianRepository {
         menteeCount: patch.menteeCount,
         independentMentees: patch.independentMentees,
         teamMonthlyOutput: patch.teamMonthlyOutput,
-        mentorshipAllowanceCents:
-          patch.mentorshipAllowance === undefined
-            ? undefined
-            : Math.round(patch.mentorshipAllowance * 100),
+        mentorshipAllowanceCents: patch.mentorshipAllowanceCents,
         gridName: patch.gridName,
         coverageRadius: patch.coverageRadius,
         boundEquipment: patch.boundEquipment,
@@ -103,7 +100,7 @@ export class AdminTechnicianRepository {
         menteeCount: tech.menteeCount,
         independentMentees: tech.independentMentees,
         teamMonthlyOutput: tech.teamMonthlyOutput,
-        mentorshipAllowanceCents: Math.round(tech.mentorshipAllowance * 100),
+        mentorshipAllowanceCents: tech.mentorshipAllowanceCents,
         gridName: tech.gridName,
         coverageRadius: tech.coverageRadius,
         boundEquipment: tech.boundEquipment,

@@ -77,12 +77,12 @@ export class TechnicianEarningRepository {
     const row = await this.prisma.amoebaStat.update({
       where: { id: 'self' },
       data: defined({
-        totalMonthIncomeCents: centsOrUndef(patch.totalMonthIncome),
+        totalMonthIncomeCents: patch.totalMonthIncomeCents,
         growthPct: patch.growthPct,
-        serviceCommissionCents: centsOrUndef(patch.serviceCommission),
+        serviceCommissionCents: patch.serviceCommissionCents,
         serviceTasksCount: patch.serviceTasksCount,
         groupTargetRate: patch.groupTargetRate,
-        groupBaselineCents: centsOrUndef(patch.groupBaseline),
+        groupBaseline: patch.groupBaseline,
         groupTierBonus: patch.groupTierBonus,
       }),
     });
@@ -153,7 +153,7 @@ export class TechnicianEarningRepository {
         orderKey: keyForFront(min._min.orderKey),
         title: tx.title,
         sub: tx.sub,
-        amountCents: Math.round(tx.amount * 100),
+        amountCents: tx.amountCents,
         type: tx.type,
         time: tx.time,
       },
@@ -161,8 +161,4 @@ export class TechnicianEarningRepository {
 
     return toRevenueTransaction(row);
   }
-}
-
-function centsOrUndef(value: number | undefined): number | undefined {
-  return value === undefined ? undefined : Math.round(value * 100);
 }

@@ -14,26 +14,13 @@ import { TechnicianSeed } from './seed-data/technician.seed';
  *    真实数据接入后，本文件与 `seed-data/` 都会删掉。
  *
  * 约定：
- * - 金额在种子数据里是**元（浮点）**，入库统一转「分」整数（红线 R7）
+ * - 金额在种子数据里已是**「分」整数**（`*Cents` 字段），入库直接透传（红线 R7），本层不再换算
  * - 列表顺序用 `orderKey` 显式保序（原型有 unshift 前插语义，必须可确定性复现）
  * - `undefined` 的可选字段一律写 `null`，读取时再还原成 `undefined`，
  *   这样「字段不存在」与「字段为空」在响应里能精确区分（字节级回归需要）
  */
 
 const prisma = new PrismaClient();
-
-/** 元 → 分。必填字段用，缺值直接报错而不是静默写 0（静默会把数据问题藏起来）。 */
-function cents(value: number | undefined | null, label: string): number {
-  if (value === undefined || value === null) {
-    throw new Error(`[seed] 必填金额缺失: ${label}`);
-  }
-  return Math.round(value * 100);
-}
-
-/** 元 → 分。可选字段用。 */
-function centsOpt(value: number | undefined | null): number | null {
-  return value === undefined || value === null ? null : Math.round(value * 100);
-}
 
 /**
  * 写 Json 列的显式转换，统一放在 `database/json.ts`（带完整说明）。
@@ -88,10 +75,7 @@ async function main(): Promise<void> {
         menteeCount: t.menteeCount,
         independentMentees: t.independentMentees,
         teamMonthlyOutput: t.teamMonthlyOutput,
-        mentorshipAllowanceCents: cents(
-          t.mentorshipAllowance,
-          `Technician.${t.id}.mentorshipAllowance`,
-        ),
+        mentorshipAllowanceCents: t.mentorshipAllowanceCents,
         gridName: t.gridName,
         coverageRadius: t.coverageRadius,
         boundEquipment: t.boundEquipment,
@@ -174,7 +158,7 @@ async function main(): Promise<void> {
         watermarkTime: o.watermarkTime ?? null,
         watermarkGps: o.watermarkGps ?? null,
         signedAt: o.signedAt ?? null,
-        settlementAmountCents: centsOpt(o.settlementAmount),
+        settlementAmountCents: o.settlementAmountCents ?? null,
       },
     });
   }
@@ -215,16 +199,13 @@ async function main(): Promise<void> {
         partnerLevel: s.partnerLevel,
         teamName: s.teamName,
         menteeStatus: s.menteeStatus,
-        serviceFeeCents: cents(s.serviceFee, `AmoebaSettlement.${s.id}.serviceFee`),
-        prescriptionBonusCents: cents(
-          s.prescriptionBonus,
-          `AmoebaSettlement.${s.id}.prescriptionBonus`,
-        ),
-        mentorshipBonusCents: cents(s.mentorshipBonus, `AmoebaSettlement.${s.id}.mentorshipBonus`),
-        equityDividendCents: cents(s.equityDividend, `AmoebaSettlement.${s.id}.equityDividend`),
-        grossAmountCents: cents(s.grossAmount, `AmoebaSettlement.${s.id}.grossAmount`),
-        taxWithheldCents: cents(s.taxWithheld, `AmoebaSettlement.${s.id}.taxWithheld`),
-        netPayCents: cents(s.netPay, `AmoebaSettlement.${s.id}.netPay`),
+        serviceFeeCents: s.serviceFeeCents,
+        prescriptionBonusCents: s.prescriptionBonusCents,
+        mentorshipBonusCents: s.mentorshipBonusCents,
+        equityDividendCents: s.equityDividendCents,
+        grossAmountCents: s.grossAmountCents,
+        taxWithheldCents: s.taxWithheldCents,
+        netPayCents: s.netPayCents,
         status: s.status,
         bankClearedAt: s.bankClearedAt ?? null,
       },
@@ -248,7 +229,7 @@ async function main(): Promise<void> {
         qrTraceCode: e.qrTraceCode ?? null,
         batchCode: e.batchCode ?? null,
         rating: e.rating ?? null,
-        settlementBonusCents: centsOpt(e.settlementBonus),
+        settlementBonusCents: e.settlementBonusCents ?? null,
       },
     });
   }
@@ -290,7 +271,7 @@ async function main(): Promise<void> {
         urgencyTag: o.urgencyTag ?? null,
         urgencyBg: o.urgencyBg ?? null,
         status: o.status,
-        dispatchTimeText: o.dispatchTimeText,
+        dispatchedAt: o.dispatchedAt,
         distanceKm: o.distanceKm,
 
         farmerName: o.farmerName,
@@ -302,10 +283,10 @@ async function main(): Promise<void> {
         cropScale: o.cropScale,
         farmerQuote: o.farmerQuote,
         farmerPhotos: json(o.farmerPhotos),
-        estimatedFeeCents: cents(o.estimatedFee, `ServiceOrder.${o.id}.estimatedFee`),
-        amoebaBonusCents: cents(o.amoebaBonus, `ServiceOrder.${o.id}.amoebaBonus`),
+        estimatedFeeCents: o.estimatedFeeCents,
+        amoebaBonusCents: o.amoebaBonusCents,
         bonusPercent: o.bonusPercent,
-        laborFeeCents: cents(o.laborFee, `ServiceOrder.${o.id}.laborFee`),
+        laborFeeCents: o.laborFeeCents,
         costBreakdown: json(o.costBreakdown),
         fieldEvidencePhotos: json(o.fieldEvidencePhotos),
         diagnosedTargets: json(o.diagnosedTargets),
@@ -327,7 +308,7 @@ async function main(): Promise<void> {
           drugId: d.id,
           name: d.name,
           spec: d.spec,
-          priceCents: cents(d.price, `ServiceOrder.${o.id}.drug.${d.id}.price`),
+          priceCents: d.priceCents,
           qty: d.qty,
           code: d.code,
           tag: d.tag,
@@ -346,7 +327,7 @@ async function main(): Promise<void> {
         orderKey: i,
         name: d.name,
         spec: d.spec,
-        priceCents: cents(d.price, `PesticideCatalogItem.${d.id}.price`),
+        priceCents: d.priceCents,
         qty: d.qty,
         code: d.code,
         tag: d.tag,
@@ -361,13 +342,13 @@ async function main(): Promise<void> {
   await prisma.amoebaStat.create({
     data: {
       id: 'self',
-      totalMonthIncomeCents: cents(a.totalMonthIncome, 'AmoebaStat.totalMonthIncome'),
+      totalMonthIncomeCents: a.totalMonthIncomeCents,
       growthPct: a.growthPct,
-      serviceCommissionCents: cents(a.serviceCommission, 'AmoebaStat.serviceCommission'),
+      serviceCommissionCents: a.serviceCommissionCents,
       serviceTasksCount: a.serviceTasksCount,
 
       groupTargetRate: a.groupTargetRate,
-      groupBaselineCents: cents(a.groupBaseline, 'AmoebaStat.groupBaseline'),
+      groupBaseline: a.groupBaseline,
       groupTierBonus: a.groupTierBonus,
     },
   });
@@ -393,7 +374,7 @@ async function main(): Promise<void> {
         orderKey: i,
         title: t.title,
         sub: t.sub,
-        amountCents: cents(t.amount, `RevenueTransaction.${t.id}.amount`),
+        amountCents: t.amountCents,
         type: t.type,
         time: t.time,
       },

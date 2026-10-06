@@ -10,7 +10,8 @@ import { toAmoebaSettlement, toFulfillmentEvent } from '../mappers';
  *
  * ⚠️ **本仓储不做任何分红计算**。分红口径（基数、档位系数、扣减、税）尚未经客户与财务确认
  *    （见 docs/requirements/amoeba-policy.md），算法待定稿后单独实现并配单测（红线 R7）。
- *    这里只按「分」存取既有结果，单位换算交给 mappers。
+ *    这里按「分」存取既有结果——领域模型与库里同为「分」整数，不再做单位换算
+ *    （元格式化在各前端展示层的 formatCents）。
  */
 @Injectable()
 export class SettlementRepository {
@@ -36,13 +37,13 @@ export class SettlementRepository {
         partnerLevel: patch.partnerLevel,
         teamName: patch.teamName,
         menteeStatus: patch.menteeStatus,
-        serviceFeeCents: centsOrUndef(patch.serviceFee),
-        prescriptionBonusCents: centsOrUndef(patch.prescriptionBonus),
-        mentorshipBonusCents: centsOrUndef(patch.mentorshipBonus),
-        equityDividendCents: centsOrUndef(patch.equityDividend),
-        grossAmountCents: centsOrUndef(patch.grossAmount),
-        taxWithheldCents: centsOrUndef(patch.taxWithheld),
-        netPayCents: centsOrUndef(patch.netPay),
+        serviceFeeCents: patch.serviceFeeCents,
+        prescriptionBonusCents: patch.prescriptionBonusCents,
+        mentorshipBonusCents: patch.mentorshipBonusCents,
+        equityDividendCents: patch.equityDividendCents,
+        grossAmountCents: patch.grossAmountCents,
+        taxWithheldCents: patch.taxWithheldCents,
+        netPayCents: patch.netPayCents,
         status: patch.status,
         bankClearedAt: patch.bankClearedAt,
       }),
@@ -62,10 +63,6 @@ export class SettlementRepository {
   async count(): Promise<number> {
     return this.prisma.amoebaSettlement.count();
   }
-}
-
-function centsOrUndef(value: number | undefined): number | undefined {
-  return value === undefined ? undefined : Math.round(value * 100);
 }
 
 /** 履约事件流仓储（总览页时间线，新事件前插）。 */
@@ -102,8 +99,7 @@ export class FulfillmentEventRepository {
         qrTraceCode: event.qrTraceCode ?? null,
         batchCode: event.batchCode ?? null,
         rating: event.rating ?? null,
-        settlementBonusCents:
-          event.settlementBonus === undefined ? null : Math.round(event.settlementBonus * 100),
+        settlementBonusCents: event.settlementBonusCents ?? null,
       },
     });
 
