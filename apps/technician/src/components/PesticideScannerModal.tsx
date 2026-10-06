@@ -1,9 +1,8 @@
+import { formatCents } from '../utils/format';
 import { Button, Image, Input, Text, View } from '@tarojs/components';
 import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
-import { showAlert } from '../utils/platform';
 import { PrescriptionDrug } from '../types';
-import { AVAILABLE_PESTICIDE_CATALOG } from '../data/mockData';
 
 interface PesticideScannerModalProps {
   isOpen: boolean;
@@ -19,35 +18,40 @@ export const PesticideScannerModal: React.FC<PesticideScannerModalProps> = ({
   const [activeTab, setActiveTab] = useState<'scanner' | 'catalog'>('scanner');
   const [searchQuery, setSearchQuery] = useState('');
   const [scannedResult, setScannedResult] = useState<PrescriptionDrug | null>(null);
-  const [catalog, setCatalog] = useState<PrescriptionDrug[]>(AVAILABLE_PESTICIDE_CATALOG);
+  // 数据契约（R4「所有数据来自后端」）：目录唯一来源是 `/api/tech/pesticides`，
+  // 初始为空态，加载失败显示可见错误——**不再回退本地 mock 目录**。
+  const [catalog, setCatalog] = useState<PrescriptionDrug[]>([]);
+  const [isCatalogLoading, setIsCatalogLoading] = useState(false);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
 
-  // 打开弹窗即拉取自营药库真目录（失败时保留 mock 兜底并提示）
+  // 打开弹窗 / 检索词变化时，统一走真接口（350ms 防抖，避免初始与检索重复拉取）
   useEffect(() => {
     if (!isOpen) return;
-    api.getPesticides()
-      .then((list) => {
-        if (list?.length) setCatalog(list);
-      })
-      .catch((e) => {
-        console.warn('[药库目录] 接口失败，使用本地目录兜底', e);
-        showAlert('药库目录加载失败，当前展示本地缓存目录');
-      });
-  }, [isOpen]);
-
-  // 检索走真接口（350ms 防抖）
-  useEffect(() => {
-    if (!isOpen) return;
+    let cancelled = false;
     const timer = setTimeout(() => {
-      api.getPesticides(searchQuery || undefined)
+      setIsCatalogLoading(true);
+      setCatalogError(null);
+      api
+        .getPesticides(searchQuery || undefined)
         .then((list) => {
-          if (list) setCatalog(list);
+          if (cancelled) return;
+          setCatalog(list ?? []);
         })
-        .catch(() => {
-          /* 保留上一次目录；输入本地过滤仍可用 */
+        .catch((e) => {
+          if (cancelled) return;
+          console.warn('[药库目录] 接口失败', e);
+          setCatalog([]);
+          setCatalogError('药剂目录加载失败，请检查后端连接后重试');
+        })
+        .finally(() => {
+          if (!cancelled) setIsCatalogLoading(false);
         });
     }, 350);
-    return () => clearTimeout(timer);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [searchQuery, isOpen]);
 
   if (!isOpen) return null;
@@ -71,12 +75,8 @@ export const PesticideScannerModal: React.FC<PesticideScannerModalProps> = ({
     onClose();
   };
 
-  const filteredCatalog = catalog.filter(
-    (d) =>
-      d.name.includes(searchQuery) ||
-      d.code.includes(searchQuery) ||
-      d.spec.includes(searchQuery)
-  );
+  // 目录已由后端按 query 过滤，前端不再二次过滤（避免误伤有效命中）
+  const displayCatalog = catalog;
 
   return (
     <View className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/80 backdrop-blur-sm select-none">
@@ -153,7 +153,7 @@ export const PesticideScannerModal: React.FC<PesticideScannerModalProps> = ({
                   >
                     <View className="font-bold text-on-surface truncate">{item.name}</View>
                     <View className="text-[10px] text-primary font-mono font-semibold">
-                      ¥{item.price} · {item.code}
+                      ¥{formatCents(item.priceCents)} · {item.code}
                     </View>
                   </Button>
                 ))}
@@ -183,7 +183,7 @@ export const PesticideScannerModal: React.FC<PesticideScannerModalProps> = ({
                     </Text>
                     <View className="flex items-center justify-between mt-1">
                       <Text className="text-primary font-mono font-extrabold text-sm">
-                        ¥{scannedResult.price.toFixed(2)}
+                        ¥{formatCents(scannedResult.priceCents)}
                       </Text>
                       <Text className="text-[10px] font-mono bg-white px-1.5 py-0.5 rounded text-secondary font-bold">
                         国家三证齐全
@@ -220,7 +220,22 @@ export const PesticideScannerModal: React.FC<PesticideScannerModalProps> = ({
 
             {/* Catalog List */}
             <View className="space-y-2 max-h-[360px] overflow-y-auto pr-1">
-              {filteredCatalog.map((drug) => (
+              {isCatalogLoading && catalog.length === 0 && (
+                <View className="py-6 text-center text-xs text-on-surface-variant">
+                  正在从药库加载药剂目录…
+                </View>
+              )}
+              {!isCatalogLoading && catalogError && (
+                <View className="py-6 px-3 text-center">
+                  <Text className="text-xs font-bold text-red-600">{catalogError}</Text>
+                </View>
+              )}
+              {!isCatalogLoading && !catalogError && displayCatalog.length === 0 && (
+                <View className="py-6 text-center text-xs text-on-surface-variant">
+                  暂无匹配药剂
+                </View>
+              )}
+              {displayCatalog.map((drug) => (
                 <View
                   key={drug.id}
                   className="p-2.5 bg-surface-container-low rounded-xl border border-surface-container flex items-center justify-between gap-2"
@@ -235,7 +250,7 @@ export const PesticideScannerModal: React.FC<PesticideScannerModalProps> = ({
                     <View className="text-[11px] text-on-surface-variant truncate">{drug.spec}</View>
                     <View className="flex items-center gap-2 mt-1">
                       <Text className="text-primary font-mono font-bold text-xs">
-                        ¥{drug.price.toFixed(2)}
+                        ¥{formatCents(drug.priceCents)}
                       </Text>
                       <Text className="text-[10px] text-secondary font-mono">{drug.tag}</Text>
                     </View>

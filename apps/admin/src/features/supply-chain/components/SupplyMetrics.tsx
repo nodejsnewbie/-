@@ -56,7 +56,7 @@ export const SupplyMetrics: React.FC = () => {
               <span className="material-symbols-outlined text-[15px]">trending_up</span> 环比增
               18.4%
             </span>
-            <span className="text-on-surface-variant/70">窜货拦截 3 次</span>
+            <span className="text-on-surface-variant/60">窜货拦截 · 待接入</span>
           </div>
         </div>
         <div className="mt-3 pt-2 border-t border-surface-container flex items-center justify-between text-on-surface-variant text-[12px]">

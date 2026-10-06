@@ -1,20 +1,23 @@
 import { Text, View } from '@tarojs/components';
 import React from 'react';
-import type { ServiceBooking } from '../types';
-import { PLATFORM_ANNOUNCEMENTS } from '../data/mockData';
+import type { ServiceBooking, ReservedCapability } from '../types';
 
 interface MessagesViewProps {
   bookings: ServiceBooking[];
+  announcements: ReservedCapability<Array<{ id: string; date: string; text: string }>> | null;
 }
 
 /**
  * 消息页（原型④：服务进度/消息通知）。
  *
- * ⚠️ 消息通知后端接口**待接入**（无消息表/推送通道）——当前：
  * - 服务动态由真实预约数据（GET /api/bookings）本地推导；
- * - 平台公告为本地 Mock 占位（已标注，R4）。
+ * - 平台公告来自后端 `GET /api/user/announcements`，本期该接口返回预留标识（待接入），
+ *   故界面显示「待接入」占位——**不展示虚构公告**（R4）。
  */
-export const MessagesView: React.FC<MessagesViewProps> = ({ bookings }) => {
+export const MessagesView: React.FC<MessagesViewProps> = ({ bookings, announcements }) => {
+  const realAnnouncements =
+    announcements?.enabled && announcements.value ? announcements.value : null;
+
   return (
     <View className="p-3 pb-28 space-y-3">
       <View className="flex gap-2">
@@ -51,24 +54,40 @@ export const MessagesView: React.FC<MessagesViewProps> = ({ bookings }) => {
         </View>
       ))}
 
-      {/* 系统公告（本地 Mock 占位，接口待接） */}
-      {PLATFORM_ANNOUNCEMENTS.map((a) => (
-        <View key={a.id} className="bg-surface-container-lowest rounded-2xl p-3.5 flex gap-2.5">
-          <View className="w-9 h-9 rounded-full bg-tertiary-fixed text-on-tertiary-fixed flex items-center justify-center shrink-0">
-            <Text className="material-symbols-outlined text-[18px]">campaign</Text>
+      {/* 系统公告（后端返回预留标识 → 待接入；接入后渲染真实公告） */}
+      {realAnnouncements ? (
+        realAnnouncements.map((a) => (
+          <View key={a.id} className="bg-surface-container-lowest rounded-2xl p-3.5 flex gap-2.5">
+            <View className="w-9 h-9 rounded-full bg-tertiary-fixed text-on-tertiary-fixed flex items-center justify-center shrink-0">
+              <Text className="material-symbols-outlined text-[18px]">campaign</Text>
+            </View>
+            <View className="flex-1 min-w-0">
+              <View className="flex items-center justify-between">
+                <Text className="text-[12px] font-bold text-on-surface">系统公告</Text>
+                <Text className="text-[10px] text-on-surface-variant">{a.date}</Text>
+              </View>
+              <Text className="text-[11px] text-on-surface-variant mt-0.5 block">{a.text}</Text>
+            </View>
+          </View>
+        ))
+      ) : (
+        <View className="rounded-2xl p-3.5 border border-dashed border-surface-container-high flex items-center gap-2.5">
+          <View className="w-9 h-9 rounded-full bg-surface-container text-on-surface-variant flex items-center justify-center shrink-0">
+            <Text className="material-symbols-outlined text-[18px]">notifications_off</Text>
           </View>
           <View className="flex-1 min-w-0">
-            <View className="flex items-center justify-between">
-              <Text className="text-[12px] font-bold text-on-surface">系统公告</Text>
-              <Text className="text-[10px] text-on-surface-variant">{a.date}</Text>
-            </View>
-            <Text className="text-[11px] text-on-surface-variant mt-0.5 block">{a.text}</Text>
+            <Text className="text-[12px] font-bold text-on-surface-variant">
+              {announcements?.label ?? '平台公告'} · 待接入
+            </Text>
+            <Text className="text-[11px] text-on-surface-variant/80 mt-0.5 block">
+              {announcements?.note ?? '消息通知接口待接入'}
+            </Text>
           </View>
         </View>
-      ))}
+      )}
 
       <Text className="block text-center text-[10px] text-on-surface-variant/70 pt-1">
-        消息推送接口待接入，以上公告为本地占位数据
+        消息推送接口待接入 · 后端返回预留标识
       </Text>
     </View>
   );

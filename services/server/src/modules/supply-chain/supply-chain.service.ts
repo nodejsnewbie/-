@@ -44,13 +44,20 @@ export class AdminSupplyChainService {
   async freezeBatch(batchNumber?: string) {
     const prod = batchNumber ? await this.supply.findByBatchNumber(batchNumber) : null;
 
-    if (prod) {
-      // 仅记录批次命中，当前 schema 中已不再保留窜货熔断字段。
-    }
-
+    // R6：窜货预警 / 批次熔断本期不做、二期评估——此处**不伪造冻结成功 / 稽查派单**。
+    // 以预留接口如实回执：能力未启用、无真实监管链路指令下发（红线 R4）。
     return {
-      success: true,
-      message: '已对该异动批次实施电子监管码即时冻结 (禁止处方核销)，稽查工单已推送常德督导组！',
+      success: false,
+      batchNumber: prod?.batchNumber ?? batchNumber ?? null,
+      capability: {
+        enabled: false,
+        value: null,
+        label: '批次熔断',
+        reason: '本期不做·二期评估',
+        note: '批次冻结能力待接入',
+      },
+      message:
+        '窜货预警 / 批次熔断本期未接入（二期评估）。此操作仅为界面预留，未对真实监管链路下发任何冻结指令。',
     };
   }
 }

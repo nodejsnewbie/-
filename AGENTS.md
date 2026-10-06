@@ -30,7 +30,7 @@
 - 基于地图的服务人员定位展示（百度/高德年费约 5 万，暂不开发）
 - 产品配合度二次营销；全品类多商家商城
 
-非目标不等于删字段——`location` / `gridCode` / `coverageRadius` 必须保留，为后续接入地图服务留接口。但**派单界面上的距离与到达时间在本期无真实数据来源，只能作为「示意值」显示且必须显式标注**（见注意事项）。
+非目标不等于删字段——`location` / `gridCode` / `coverageRadius` 必须保留，为后续接入地图服务留接口。但**派单界面上的距离与到达时间本期无真实数据来源**：不再伪造「示意值」，改由预留接口 `location`（`ReservedCapability`，本期 `enabled:false`）承载、界面显示「待接入」，**且不得作为派单决策、绩效或结算依据**（见注意事项 2）。
 
 > 详细版规范（可衡量目标、非目标原因、技术栈版本明细、角色权限边界、目录组织原则、流程明细与状态机、待决策项、实现状态对照）见 [`docs/PROJECT-SPEC.md`](docs/PROJECT-SPEC.md)。
 > 两者冲突时**以本文件为准**，并须同步修正 PROJECT-SPEC。
@@ -187,11 +187,13 @@ npm start            # 生产模式启动后端（需先 build）
 
   **审核手段（经第 3 步确认）**：本业务为**纯人工审核**——审核员肉眼核对证件照片，**无 OCR、无人脸核身**。因此不得把自动化识别当作 R5 的必须项，也不得在界面或报表上展示「OCR 比对率」这类不存在的指标（同时违反 R4）。
 
+  **预留接口（2026-10-05 更新）**：OCR 与人脸核身**不删除、也不伪造**，改由 `ReservedCapability` 预留接口 `ocrVerification` / `faceVerification` 承载——本期服务端恒返回 `{ enabled: false, value: null }`，界面标注「待接入·本期纯人工审核」，**不得展示任何比对结论或匹配率**。审核通过与否**仍只能由持权限的运营管理员人工提交**，预留接口不参与合规判定。
+
   **前端开发阶段等效约束（后端未就绪时适用）**：前端**不得伪造合规通过态**——禁止硬编码「已校验有效」类文案、禁止把资质状态写死为绿、禁止在无接口返回时默认放行；合规态一律来自接口契约桩，且桩数据必须显式标注为 Mock，不得流入生产。
 
 - ❌ **R6 溯源监管**：溯源节点伪造或补造；溯源码可重复核销、可由前端伪造或绕过服务端校验；与监管系统的数据同步失败被静默吞掉
 
-  > 「批次冻结 / 窜货熔断」经第 3 步确认**本期不做、二期再评估**，因此**不作为本期红线判定项**。相关字段（`fleeStatus` / `fleeStatusText` / `fleeLocation`）须从本期 PRD 与界面中移除，**不得以「示意」形式保留**（与 R4 冲突）。
+  > 「批次冻结 / 窜货预警」经第 3 步确认**本期不做、二期再评估**，因此**不作为本期红线判定项**。处置口径（2026-10-05 更新，取代原「删除字段」方案）：**不删除、也不伪造**——改由 `ReservedCapability` 预留接口 `fleeMonitoring` / `batchFreeze` 承载，本期服务端恒返回 `{ enabled: false, value: null }`，界面渲染「待接入」；原先会误导为「已有数据」的裸字段名 `fleeStatus` / `fleeStatusText` / `fleeLocation` 已废弃（伪造的监测结果或「窜货拦截 N 次」计数仍违反 R4/R6）。二期接入真实监管链路时只需把 `enabled` 置真并填入 `value`，契约无需破坏性变更（R3）。
 
 - ❌ **R7 资金**：结算逻辑无单测；金额非「分」整数、浮点累加；`应付 − 预扣税 ≠ 实发` 的分位差异
 
@@ -203,7 +205,7 @@ npm start            # 生产模式启动后端（需先 build）
 - ❌ **R9 测试阈值**：核心逻辑行覆盖 < 80% / 分支 < 70%；Given-When-Then 未 100% 通过；关键 E2E 未 100% 通过
 - ❌ **R10 变更纪律**：提交 `node_modules`/`dist`/`.env`/密钥；绕过 CI 门禁；新增单文件 > 500 行
 
-> **存量违规登记**：R7 要求金额以「分」为整数，但迁入的原型 Mock 数据全为浮点金额（如 `services/server/src/database/seed-data/technician.seed.ts` 里 `serviceFee: 4200.0`、`netPay: 8671.8`、`taxWithheld: 268.2`）。存储层已全部转「分」落库（含商城域），**接口响应仍按原型返回「元」浮点**（mapper 边界还原），响应层的浮点金额与三套原型数据按「已登记违规」处理，**新增代码仍须合规**；迁移时点见 PROJECT-SPEC 待决策项。
+> **R7 金额迁移（响应层已完成，存量违规清除）**：R7 要求金额以「分」为整数。此前存储层已转「分」落库，但**接口响应仍返回「元」浮点**（`serviceFee: 4200.0`、`netPay: 8671.8`、`taxWithheld: 268.2`）——该响应层浮点即存量违规，**已于 2026-10-05 的「类型驱动金额重构」清除**。做法：`packages/shared` 领域类型 + 后端 mappers/services/seed + admin/technician/user 三端，**所有金额字段统一改名为 `*Cents` 并以整数「分」返回**（`serviceFeeCents: 420000`、`netPayCents: 867180`、`taxWithheldCents: 26820`；浮点「分」值精确 ×100 无丢失）。**展示层唯一转「元」处**为各 app 的 `formatCents`/`centsToYuan` 工具（`packages/shared` 保持纯类型、运行期擦除，不含格式化函数）。技师端提现弹窗 `WithdrawModal` 仍以「元」为用户输入口径，进入逻辑前经 `centsToYuan` 还原，响应写回用 `*Cents`——此为用户输入边界，非存储/契约违规。**回归证据**：改前/改后逐字节 deep-diff 显示 178 处叶子变化**全部为金额字段 ×100 改名、0 处非金额回归**（`groupBaseline`/`groupTargetRate` 等百分比字段字节不变）；重抓 core 15/15、mall 11/11 确定性基线（seed 后自比 0 差异）并入库为最新「改后」夹具；`smoke-mutations` 34/34 全过。PROJECT-SPEC D5 迁移窗口**就此关闭**。
 
 ## 代码规范
 
@@ -350,7 +352,7 @@ docs/                    # 0_index / 1_common / 2_pc_* / 9_data_dict / ui/demos
 ## 开发注意事项
 
 1. **许可证是命门**：农药经营许可证是准入门槛，一切「谁能接单 / 谁能开方 / 谁能卖药」的判断走服务端
-2. **地图定位本期不做，字段要留**：`location` / `gridCode` / `coverageRadius` 只加不改；但**派单界面上的距离与到达时间本期没有真实数据来源，只能以「示意」标注显示，且不得作为派单决策、绩效或结算依据**（经第 3 步确认）
+2. **地图定位本期不做，字段要留**：`location` / `gridCode` / `coverageRadius` 只加不改；但**派单界面上的距离与到达时间本期没有真实数据来源**——不得伪造「示意值」，一律经预留接口 `location`（`ReservedCapability`，本期 `enabled:false`）返回、界面显示「待接入」，且**不得作为派单决策、绩效或结算依据**（经第 3 步确认；处置口径 2026-10-05 由「示意」改为「预留·待接入」）
 3. **一物一码是监管要求**：溯源节点必须真实产生、可追溯来源，禁止为时间线好看而补造
 4. **脱敏无例外**：手机号、身份证、许可证号在界面/截图/日志/测试数据中同样适用
 5. **后端数据是种子 Mock（Prisma/SQLite）**：数据可持久但全部来自 `src/database/seed-data/` 的原型假数据（`node dist/database/seed.js` 幂等复位）；任何「验证通过」的结论必须注明「Mock 环境」，不得据此宣布需求完成
@@ -479,14 +481,67 @@ docs/                    # 0_index / 1_common / 2_pc_* / 9_data_dict / ui/demos
 
 **第二轮（2026-10-05，接口接线与运行期适配）**：`services/api.ts` 重写为 `Taro.request`（小程序无 fetch）并**修正基址 `/api` → `/api/tech`**（原写法会打到企业后台同前缀路由）；签名板改用 Canvas 2d 节点（SelectorQuery + 触摸坐标 + canvasToTempFilePath）；拍照上传改 `Taro.chooseImage`；剪贴板/语音播报等浏览器 API 换 Taro 等价物或诚实降级；扫码弹窗接入 `/pesticides` 与 `/pesticides/:code` 验真（失败回退本地目录并提示）。验收：tsc / eslint / `taro build --type weapp` 全绿。
 
+### 后端真源接线与预留接口记录（2026-10-05，第三轮）
+
+按客户方开发人「**所有数据都来自真实后端**」与「虚构字段先预留接口、不真的实现」两条指令完成，**不新增红线、不改口径**（预留处置的合规前提仍是相关能力本期不产出真实结论）：
+
+| 项 | 内容 | 验证证据 |
+| --- | --- | --- |
+| **技师端去 Mock 数据源** | `apps/technician/src/data/mockData.ts` 删除（`git rm`）；`TechnicianWorkspace` 全量改由 `services/api.ts` 拉取，加载态/空态/错误态齐备；`PesticideScannerModal` 药剂目录改接口驱动（防抖 350ms + 取消标志 + 加载/错误/空态），删本地目录 fallback | tsc 0 / eslint 0 error / `taro build --type weapp` 编译通过 |
+| **预留接口机制** | `@hnhall/shared` 新增**纯类型** `types/reserved.ts`（`ReservedCapability<T> = { enabled, value: T｜null, label, reason?, note? }`）；服务端 `services/server/src/database/reserved.ts` 提供 `pending()` 工厂与 `RESERVED` 清单（构造留服务端，shared 保持运行期零产物） | lint / build 全绿；`packages/shared` 仍纯类型 |
+| **响应层预留字段** | mappers 注入：审核 `ocrVerification`/`faceVerification`、供应链 `fleeMonitoring`/`batchFreeze`、技师 `incentiveMultiplier`、工单 `location`/`gpsCoords`、阿米巴 `prescriptionDividend`/`teamReferralDividend`/`equityPreDraw`——本期恒 `{ enabled:false, value:null, reason }`，**不伪造值**（R4/R5/R6 合规） | 深度比对：`before` 全部字段/值保留，改动**纯新增 0 回归** |
+| **前端「待接入」渲染** | admin 资质抽屉（自动核验面板）、溯源弹窗（窜货/熔断面板 + 诚实 toast）、`SupplyMetrics`「窜货拦截」改「待接入」、`Feedback` 窜货危机卡改为中性「监测能力待接入」并去除「OCR 已比对完成」；technician `AmoebaBonusView`（更多收益分项）、`OrderHallView`（距离→定位待接入）、`PartnerProfileView`（+¥680/+¥420 分红→「待接入」） | 界面不再出现伪造数值/结论 |
+| **C 端手机号脱敏** | 脱敏在**后端 mapper** 实现，非硬编码种子 | 见下回归基线 |
+| **C 端用户端全量接线** | `apps/user/src/data/mockData.ts` 删除（数据型伪造移除）；纯展示映射（`SERVICE_TYPE_TEXT`/`BOOKING_STATUS_TEXT`/`statusStepIndex`/示例溯源码）上收至 `src/constants/presentation.ts`（非数据源）；新增后端预留接口 `GET /api/user/{profile,announcements,coupons}`（均 `enabled:false`）；`ProfileView`（微信登录 / 优惠券）与 `MessagesView`（平台公告）改由后端预留标识渲染「待接入」，不再展示虚构「张先生 / 公告 / 券 2 张」；`BookingView` 新增联系人 + 联系电话输入，`MallWorkspace` 不再注入 `MOCK_USER`（农户自填，后端出参脱敏） | tsc / eslint / `taro build --type weapp` 全绿；新端点已入 mall 基线（11/11），`/api/user/*` 实测返回 `enabled:false` |
+| **`freezeBatch` 诚实回执** | 不再伪造 `success:true`；返回 `{ success:false, batchNumber, capability:{enabled:false,…}, message:'…未对真实监管链路下发任何冻结指令' }` | smoke `freeze-batch` 键集更新为 `[success,batchNumber,capability,message]` 并断言通过 |
+
+**回归闭环**：`npm run lint` / `lint:eslint`（0 error，2 处既有 `set-state-in-effect` warn）/ `build` 全绿；core 基线重抓并**自比对 15/15 逐字节一致**（证明确定性），mall 基线扩至 **11 端点**（含新增 `/api/user/{profile,announcements,coupons}` 三条预留路由）并自比对 0 差异、原 8 条商城路由无回归，`smoke-mutations` **34/34 断言全过、0 失败**；跑毕 `seed.js` 复位；孤立陈旧夹具 `api-baseline-db.json` 已 `git rm`。
+
+> ⚠️ 这些预留字段的**存在性与「本期不做」判定仍属待客户确认假设**；客户若确认某能力根本不需要，则相应预留字段连同 UI 一并撤除。
+
+### 类型驱动金额重构记录（2026-10-05，第四轮）
+
+按用户「**改名 `*Cents` 整数（类型驱动）**」指令，把 R7 存量违规从**响应层**一并清除：所有金额字段在 `@hnhall/shared` 类型、后端 mapper/service/seed、admin/technician/user 三端统一改名为 `*Cents` 并以整数「分」返回，转「元」只发生在展示层。与第三轮「只搬结构不改口径」不同，本轮是**有意的契约破坏性变更**（响应字段名与单位口径同时改），故重抓并提交最新基线夹具。
+
+| 项 | 内容 | 验证证据 |
+| --- | --- | --- |
+| **类型真源改名** | `packages/shared` 金额字段全加 `Cents` 后缀（`serviceFeeCents`/`netPayCents`/`taxWithheldCents`/`grossAmountCents`/`estimatedFeeCents`/`amoebaBonusCents`/`laborFeeCents`/`priceCents`/`amountCents`/`costBreakdown[].amountCents`/`totalMonthIncomeCents`/`serviceCommissionCents`/`settlementBonusCents`/`settlementAmountCents`/`mentorshipAllowanceCents` 及商城 `priceCents`/`originalPriceCents`）；`totalAmountCents` 等已合规项保留 | admin（TS7 strict）tsc 逐处报陈旧键名，作为改名驱动；technician/user `strict:false` 且金额来自 `any` 接口响应，tsc 不报，**改由 grep 逐个迁移** |
+| **展示层格式化边界** | 各 app 新增/复用 `utils/format.ts`：`formatCents`（分→带 2 位小数「元」串）、`centsToYuan`（分→数值「元」）、`formatCentsCompact`（整元不带小数以保 `¥48` 观感）；`packages/shared` **保持纯类型、运行期擦除，不含格式化函数** | tsc 全绿；组件仅经 `formatCents` 呈现，无裸除 100 |
+| **百分比字段误判纠正** | `AmoebaStat.groupBaseline` 曾被误当金额改名并 ×100（值 100→10000）；它是 `groupTargetRate` 同级的**百分比基准**（界面显示「100%基准」），**回退为 `groupBaseline: Int`（值 100）**，含 `schema.prisma` 列名/类型回退 | 回退后 `prisma generate` + `db push --force-reset` + 重播种；deep-diff 确认 `groupBaseline:100`/`groupTargetRate:118` **字节不变**（教训：**金额化前按展示语义（是否带 `%`）判定，勿只看字段名**） |
+| **提现输入边界** | `WithdrawModal` 与技师端提现**请求体**仍按用户输入的「元」口径（`{ amount /*元*/, channel }`），进入逻辑前 `centsToYuan`、写回响应 `remainingBalanceCents`/`newTotalIncomeCents`——属**用户输入边界**，非存储/契约违规 | 后端读元、返回分；smoke withdraw 键集 `[success,message,data]` 断言不变并通过 |
+| **仪表板硬编码 KPI 转分** | `dashboard.service.ts` 两处「元」硬编码金额 `supplyTraceSales: 128450.0`→`supplyTraceSalesCents: 12845000`、`amoebaBonusPool: 342800.0`→`amoebaBonusPoolCents: 34280000`；计数/比率类 KPI 不动 | admin `api.ts` 内联类型同步改名；`KpiCards.tsx` 该两项为硬编码 JSX 字面量、无消费者，改名安全 |
+| **写操作烟测请求体同步** | `scripts/smoke-mutations.mjs` `createOrder` 用例请求体 `{ product: { price: 48 } }`→`{ product: { priceCents: 4800 } }`（后端 `mall-trade.service.ts` 已改读 `item.product.priceCents`，否则 `totalAmountCents` 得 NaN） | smoke `POST /api/orders` 返回 `totalAmountCents = 9600`，键集断言通过 |
+
+**遗留展示型硬编码金额字面量（非契约、待真实数据接线时替换，不影响 R7 响应层合规）**：`technician` `OrderHallView` 头部静态 `¥428.50`、`PartnerProfileView` `¥8,940.00`、admin `KpiCards` 的 `128,450`/`342,800` 系列——均为写死的原型装饰文案，未读取接口金额字段。
+
+**回归闭环**：改前/改后逐字节 deep-diff **178 处叶子变化（core 150 + mall 28）全部为金额字段 ×100 改名、0 处非金额回归**（含浮点分位精确保留 `taxWithheld 268.2→26820`、`netPay 8671.8→867180`、`amount 98.4→9840`）；`seed` 后重抓 core **15/15** + mall **11/11** 确定性基线（二次 seed+capture 自比 **0 差异**，`/api/trace/history` 经 `<timestamp>` 归一后稳定），已入库为最新「改后」夹具（陈旧 `api-baseline-db.json` 保持 `git rm`）；`npm run lint`（tsc 四工作区 0）/ `lint:eslint`（0 error，2 处既有 `set-state-in-effect` warn）/ `npm run build`（admin vite + 两端 taro + server nest）全绿；`smoke-mutations` **34/34 全过、0 失败**；跑毕 `seed.js` 复位。AGENTS R7 登记与 PROJECT-SPEC **D5 迁移窗口同步关闭**。
+
+### 时间字段 ISO 8601 迁移记录（2026-10-06，第五轮）
+
+承接金额第四轮，清除「数据与业务」规范里的时间红线存量违规——**后端曾把伪相对串（`5分钟前派发` / `刚刚` / `N分钟前`）和本地化展示串（`toLocaleString` / `MM-DD` / `2024年…月…日`）当作时刻字段直接下发**，违反「时间用 ISO 8601 存储传输，展示层本地化；禁止存『2分钟前』」。本轮把**所有真实时刻字段**改为 ISO 8601（种子锚定 `+08:00`，运行时写入用 `new Date().toISOString()` 的 UTC `Z`——两者均为合法 ISO，`formatRelativeTime` 解析时区无关），「N分钟前」类相对文案改由**前端依据当前时间实时计算**。与第四轮同属**有意的契约破坏性变更**（字段名 + 值口径同时改），故重抓并提交最新基线夹具。
+
+| 项 | 内容 | 验证证据 |
+| --- | --- | --- |
+| **字段改名** | 技师工单 `dispatchTimeText`（存 `'5分钟前派发'` 伪相对串）→ `dispatchedAt`（存 ISO 真实派发时刻）；贯穿 `@hnhall/shared`（`technician-view.ts`）、`schema.prisma` 列、`mappers.ts`、`technician-order.repository.ts`、`seed.ts` 播种映射、technician `OrderHallView` | SQLite 列改名 = drop+add NOT NULL，须 `prisma db push --force-reset` + `generate` + 重播种 |
+| **展示层边界** | 三端 `utils/format.ts` 各加 `formatRelativeTime`（ISO → 刚刚/N分钟前/N小时前/N天前，>7 天或异常回退绝对日期）与 `formatDateTime`（ISO → `YYYY-MM-DD HH:mm`）；`packages/shared` **保持纯类型、运行期擦除**，不含格式化函数 | 相对串不再由后端下发；种子历史时刻（2024）相对真实 now（2026）自动回退为绝对日期，属正确行为 |
+| **消费点迁移** | admin `OrderQueue`（`reportedTime`）、`SupplyModals`（`traceabilityNodes[].time`）→ `formatDateTime`；technician `OrderHallView`（`dispatchedAt`）、`AmoebaBonusView`（交易 `time`）→ `formatRelativeTime`，`PrescriptionBuilderParts`（取证 `time`）→ `formatDateTime`；user `TraceVerify`（验真链 `timestamp`）→ `formatDateTime` | grep 全仓源码（排除 dist）确认无残留裸渲染与 `dispatchTimeText` 引用 |
+| **运行时写入去伪相对** | `amoeba.service` / `admin-order.service` / `technician-order.service` 的 `'刚刚'` → `new Date().toISOString()`；`technician-order` 取证 `timeStr`（`MM-DD HH:MM`）与 `signedAt` 的 `toLocaleString()/toLocaleTimeString()`、`admin-order` `updateStep` 的 `watermarkTime`/`signedAt`、`mall-trace` 台账 `queryTime` 的 `toLocaleString('zh-CN')` → 全改 ISO | 仅出现在写路径响应，`smoke` 按键集断言（非值），基线 GET 读种子（确定性），不受影响 |
+| **mall 验真链 chain 规范化** | `mall-trace.service` 的 `chain[].timestamp`（原 step1–3 为 `2024-08-20 09:12` dash、step4 为 `${dateStr} ${hhmm}` 中文历法）→ 真实 ISO（前三条固定时刻转 `+08:00`，第四条当前扫码转 `now.toISOString()`），令 `SupplyChainStep.timestamp` 名副其实为 ISO；基线 `timestamp` 键被 `<timestamp>` 归一，不破坏确定性 | mall 基线前后**0 可观测差异**（时间字段被归一遮蔽），确定性由二次 seed+capture 自比证明 |
+| **money 第四轮遗漏补正** | `admin-order.service` `updateStep` step5 残留 `settlementAmount: 450.0`（元浮点，且不在 `WorkOrder` 类型/仓储 `update()` 白名单内 → tsc 因 spread 条件对象未报、值被静默丢弃）→ `settlementAmountCents: 45000` | 补上后 step5 完成才真正落结算额；tsc 复验 0 |
+
+**有意保留（非时刻 / 装饰文案，登记为已知遗留）**：① **时间窗**——`scheduledTime`（`06-20 09:30-11:30` / `今日 15:00-17:00`）语义是「区间」非「时刻」，不转 ISO；② **动作动词**——technician `TeamMemberFeed.action`（`刚刚完成` / `成功推荐`）是展示文案非时间戳；③ **中文历法装饰串**——mall 验真响应 `productionDate`/`expiryDate`/`firstQueryTime`/`storeInDate`（如 `2024年08月20日`、`…(首次官方验真)`）为弹窗装饰，接真实溯源数据时再规范化；④ **写死相对串的装饰 JSX**——admin `FulfillmentStream`（`2/8/14分钟前`）与 `Feedback`（`25分钟前`）是**未绑定数据的原型装饰字面量**（与写死的 `¥428.50`/`¥420.00` 同性质），其对应后端 `fulfillmentEvents`（已 ISO 化）暂无前端消费者，本轮不接线（属功能改动非格式化）。
+
+**回归闭环**：改前/改后逐字节 deep-diff 显示 core **40 处叶子变化全部为时间字段（40/40 时间键、0 处非时间回归）**、mall **0 可观测差异**（时间字段被 `<timestamp>` 归一遮蔽）；`[一致]` 端点（`/api/amoeba`·`/api/tech/technician`·`/api/tech/pesticides`·`/api/tech/amoeba/{stats,transactions,feeds}`）证明金额与非时间字段字节不变；`seed` 后重抓 core **15/15** + mall **11/11** 确定性基线（二次 seed+capture 自比 **0 差异**），已入库为最新「改后」夹具；`npm run lint`（tsc 四工作区 0）/ `lint:eslint`（0 error，2 处既有 `set-state-in-effect` warn）/ `npm run build`（admin vite + 两端 taro + server nest）全绿；`smoke-mutations` **0 失败**；跑毕 `seed.js` 复位。时间展示串→ISO 任务就此完成，装饰串遗留见上表④与「已知遗留」。
+
 ### 已知遗留（不阻塞当前步骤）
 
 - **最高优先：需求待与客户确认**——第 3 步的四份文档全部建立在开发方判断之上。按 [`discovery-questions.md`](docs/requirements/discovery-questions.md) 的**第一层 7 题**逐层推进（微信沟通、讨论阶段）；第一层答复到位后才进第二层。**客户确认前，第 4 步 PRD 不得定稿。**
 - **`apps/technician`（Taro 小程序）**：构建与接口接线已完成，真机验证待做
-- **`apps/user`（C 端用户端 Taro 小程序）**：已由 H5 转小程序，并入时登记的存量缺陷（乐观 fallback、badgeColor、未脱敏手机号等）见「C 端商城并入记录」
+- **`apps/user`（C 端用户端 Taro 小程序）**：已由 H5 转小程序；并入时登记的「乐观 fallback」「未脱敏手机号」「badgeColor」已修（api 层失败即抛、后端 mapper 统一脱敏、移除 Tailwind 类名字段）。本会话进一步**移除 `mockData` 数据源**——`ProfileView`/`MessagesView`/优惠券改由后端预留接口（`/api/user/*`，待接入），`BookingView` 由农户自填联系人。仍遗留：真机验证待做；`createBooking` 的 `assignedAgronomist` 兜底为原型硬编码（待真实派单接入后替换）
 - ~~PostgreSQL 未安装~~ → **方案已定**：开发用 **SQLite + Prisma**（`services/server/prisma/dev.db`，连通性已实测），生产目标 PostgreSQL，**本地不安装 PG**。切 PG 时要改 `provider` → 重跑迁移 → 重新 generate client
-- **技师端 H5 版带着已被否定的虚构字段**，移植时必须清理：`ServiceOrder.distanceKm` / `gpsCoords`（无定位能力）、`AmoebaStat.prescriptionDividend` / `teamReferralDividend` / `equityPreDraw`（分红仅来自服务收入）、`incentiveMultiplier`（档位系数待定）
-- **技师端 H5 有 1 个文件超红线**：`PrescriptionBuilderView.tsx` 517 行（R10 上限 500）——移植时按功能拆分
+- ~~技师端 H5 版带着已被否定的虚构字段，移植时必须清理~~ → **已按预留接口处置（2026-10-05）**：`ServiceOrder` 的 `distanceKm`/`gpsCoords`、`AmoebaStat` 的 `prescriptionDividend`/`teamReferralDividend`/`equityPreDraw`、`TechnicianProfile.incentiveMultiplier` **不删除、不伪造**，改由 `ReservedCapability` 预留接口承载（本期恒 `enabled:false`，界面「待接入」）；距离仍**不得作为派单/绩效/结算依据**（注意事项 2）
+- ~~技师端 H5 有 1 个文件超红线：`PrescriptionBuilderView.tsx` 517 行（R10 上限 500）~~ → **移植时已拆**：按功能拆出 `PrescriptionBuilderParts`（415 + 144 行），两文件均 ≤ 500（见「技师端 Taro 脚手架记录」R10/规范行）
 - 第 6 步顺序倒置的处置（追认 or 返工）——见 PROJECT-SPEC 待决策项
-- 现有 6 个模块中已确认「本期不做」的字段（`fleeStatus` / `fleeStatusText` / `fleeLocation` / `ocrMatchRate` / `identityFaceMatched`）需在进入第 6 步前从界面与 `@hnhall/shared` 中清除（该结论同样待客户确认）
+- ~~本期不做的字段需在进入第 6 步前从界面与 `@hnhall/shared` 中清除~~ → **已按预留接口处置（2026-10-05，取代原「一律清除」方案，结论仍待客户确认）**：会误导为「已有结果」的**伪造度量**（`ocrMatchRate` / `identityFaceMatched`）直接删除（不可预留，预留即暗示有值）；**能力本身**改以 `ReservedCapability` 预留接口承载——审核域 `ocrVerification` / `faceVerification`，供应链域 `fleeMonitoring` / `batchFreeze`，本期恒 `enabled:false`、界面「待接入」，二期接入时非破坏性地填 `value`
 - 阿米巴分红制度建议已产出（[v0.1 待评审](docs/requirements/amoeba-policy.md)）；**客户与财务确认前 R7 结算不得开工**——待确认项见该文档 §9
+- **时间红线迁移的有意保留（2026-10-06，第五轮）**：真实时刻字段已全部 ISO 8601、伪相对串（`刚刚`/`N分钟前`/`5分钟前派发`）与 `toLocaleString` 展示串已清除；**非时刻或装饰文案不转 ISO**——① 时间窗 `scheduledTime`（区间语义）、② 技师端 `TeamMemberFeed.action`（动作动词）、③ mall 验真响应 `productionDate`/`expiryDate`/`firstQueryTime`/`storeInDate`（中文历法装饰，接真实溯源数据时再规范化）、④ admin `FulfillmentStream`/`Feedback` 里写死的 `N分钟前`/`25分钟前`（未绑定数据的原型装饰字面量，其后端 `fulfillmentEvents` 已 ISO 化但暂无前端消费者，接线属功能改动）

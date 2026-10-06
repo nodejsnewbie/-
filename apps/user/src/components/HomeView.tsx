@@ -1,7 +1,8 @@
 import { Button, Image, Input, Text, View } from '@tarojs/components';
 import React from 'react';
 import type { MallProduct, ServiceBooking } from '../types';
-import { SAMPLE_TRACE_CODES, SERVICE_TYPE_TEXT } from '../data/mockData';
+import { EXAMPLE_TRACE_CODES, SERVICE_TYPE_TEXT } from '../constants/presentation';
+import { formatCentsCompact } from '../utils/format';
 
 interface HomeViewProps {
   products: MallProduct[];
@@ -115,7 +116,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </View>
         <View className="flex items-center gap-1.5 mt-2">
           <Text className="text-[10px] text-on-surface-variant">示例码:</Text>
-          {SAMPLE_TRACE_CODES.map((code) => (
+          {EXAMPLE_TRACE_CODES.map((code) => (
             <Text
               key={code}
               onClick={() => onSearchCode(code)}
@@ -178,7 +179,9 @@ export const HomeView: React.FC<HomeViewProps> = ({
               <View className="p-2">
                 <Text className="text-[11px] font-bold text-on-surface line-clamp-1">{p.name}</Text>
                 <View className="flex items-center justify-between mt-1">
-                  <Text className="text-[13px] font-extrabold text-primary font-mono">¥{p.price}</Text>
+                  <Text className="text-[13px] font-extrabold text-primary font-mono">
+                    ¥{formatCentsCompact(p.priceCents)}
+                  </Text>
                   <Text className="text-[9px] text-secondary font-bold">一物一码</Text>
                 </View>
               </View>

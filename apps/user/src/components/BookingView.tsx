@@ -23,13 +23,16 @@ export const BookingView: React.FC<BookingViewProps> = ({ initialType, onSubmit 
   const [issue, setIssue] = useState('');
   const [address, setAddress] = useState('');
   const [preferredDate, setPreferredDate] = useState('');
+  const [contactName, setContactName] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const canSubmit = cropType.trim() && address.trim() && preferredDate && !submitting;
+  const canSubmit =
+    cropType.trim() && address.trim() && preferredDate && contactName.trim() && contactPhone.trim() && !submitting;
 
   const handleSubmit = async () => {
     if (!canSubmit) {
-      showAlert('请补全作物类型、服务地址与期望上门时间');
+      showAlert('请补全作物类型、服务地址、期望上门时间与联系人/联系电话');
       return;
     }
     setSubmitting(true);
@@ -39,6 +42,8 @@ export const BookingView: React.FC<BookingViewProps> = ({ initialType, onSubmit 
         cropType: cropType.trim(),
         plotAddress: address.trim(),
         preferredDate,
+        contactName: contactName.trim(),
+        contactPhone: contactPhone.trim(),
         // 问题描述暂存于 associatedProducts 无合适字段——notes 字段为契约预留位
         notes: issue.trim() || undefined,
         status: 'submitted',
@@ -135,6 +140,25 @@ export const BookingView: React.FC<BookingViewProps> = ({ initialType, onSubmit 
               <Text className="material-symbols-outlined text-on-surface-variant text-[16px]">calendar_month</Text>
             </View>
           </Picker>
+        </View>
+        <View>
+          <Text className="text-[12px] font-semibold text-on-surface-variant mb-1 block">联系人</Text>
+          <Input
+            value={contactName}
+            onInput={(e) => setContactName(e.detail.value)}
+            placeholder="请输入您的称呼"
+            className="bg-surface-container rounded-lg px-3 py-2 text-[12px] text-on-surface"
+          />
+        </View>
+        <View>
+          <Text className="text-[12px] font-semibold text-on-surface-variant mb-1 block">联系电话</Text>
+          <Input
+            type="number"
+            value={contactPhone}
+            onInput={(e) => setContactPhone(e.detail.value)}
+            placeholder="便于服务站与您联系"
+            className="bg-surface-container rounded-lg px-3 py-2 text-[12px] text-on-surface"
+          />
         </View>
       </View>
 

@@ -231,6 +231,9 @@
 | 6   | 资质审核手段   | **纯人工**：审核员肉眼核对证件照片，无 OCR、无人脸核身                                 | R5 已重写（删除「OCR 比对」必须项）；`ocrMatchRate`、`identityFaceMatched`、`nationalRegistryVerified` 需移除；界面不得展示不存在的识别指标                                     |
 | 7   | 定位精度       | 保留展示但不要求准确（纯演示）                                                         | **与 R4 直接冲突**：示意值必须显式标注「示意」，且不得作为派单决策、绩效或结算依据。已在 AGENTS.md 注意事项第 2 条落规则                                                        |
 
+> **处置口径更新（2026-10-05，见 AGENTS「后端真源接线与预留接口记录」与 PROJECT-SPEC D8）**：上表第 4 / 6 / 7 行「移除 / 示意」的原始表述已细化为**预留接口**模型——
+> 会误导为「已有结果」的**伪造度量**（`ocrMatchRate` / `identityFaceMatched` / 精确 `estimatedArrivalMin`）仍**直接删除**（预留即暗示有值，不可留）；但**能力本身**（窜货 `fleeMonitoring`/`batchFreeze`、核验 `ocrVerification`/`faceVerification`、定位 `location`、技师分红 `prescriptionDividend`/`teamReferralDividend`/`equityPreDraw` 与 `incentiveMultiplier`）**不再删除**，改由 `ReservedCapability` 承载（本期恒 `enabled:false`），界面一律显示「待接入」，**既不伪造示意数值、也不呈现绿色通过态**，二期接入真实能力时非破坏性地填 `value`。
+
 ### 7.1 本轮暴露的两类问题
 
 **A. 我的判断错了一次**：把 `machinery` 当成误读。教训——**从字面差异推断业务意图是不可靠的**；「农资」与「农机」一字之差，我据此下结论，而实际两者都要。字段级审计适合判断「有没有依据」，不适合判断「是不是误读」。

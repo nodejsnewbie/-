@@ -1,9 +1,8 @@
 import { Text, View } from '@tarojs/components';
 import React, { useEffect, useState } from 'react';
-import type { MallProduct, ServiceBooking } from './types';
+import type { MallProduct, ServiceBooking, ReservedCapability } from './types';
 import { api } from './services/api';
 import { showAlert } from './utils/platform';
-import { MOCK_USER } from './data/mockData';
 import { BottomNav } from './components/BottomNav';
 import type { MallTab } from './components/BottomNav';
 import { HomeView } from './components/HomeView';
@@ -27,6 +26,11 @@ export default function MallWorkspace() {
   const [traceOpen, setTraceOpen] = useState(false);
   const [traceCode, setTraceCode] = useState('');
   const [loadError, setLoadError] = useState(false);
+  const [profile, setProfile] = useState<ReservedCapability<{ name: string; phone: string; avatar: string }> | null>(null);
+  const [announcements, setAnnouncements] = useState<
+    ReservedCapability<Array<{ id: string; date: string; text: string }>> | null
+  >(null);
+  const [coupon, setCoupon] = useState<ReservedCapability<number> | null>(null);
 
   useEffect(() => {
     Promise.allSettled([api.getProducts(), api.getBookings()]).then(([p, b]) => {
@@ -41,6 +45,11 @@ export default function MallWorkspace() {
         showAlert('后端服务暂不可达，请确认统一后端（:3000）已启动');
       }
     });
+
+    // 「我的 / 消息」能力本期后端未接入，返回预留标识；各自独立拉取，失败留空由子视图显示「待接入」。
+    api.getProfile().then(setProfile).catch(() => setProfile(null));
+    api.getAnnouncements().then(setAnnouncements).catch(() => setAnnouncements(null));
+    api.getCoupons().then(setCoupon).catch(() => setCoupon(null));
   }, []);
 
   const goBooking = (type?: ServiceBooking['serviceType']) => {
@@ -54,10 +63,10 @@ export default function MallWorkspace() {
   };
 
   const handleCreateBooking = async (booking: Partial<ServiceBooking>) => {
+    // 联系人 / 联系电话由农户在预约表单自行填写（微信登录体系待接入，不注入虚构用户）；
+    // 后端出参对手机号统一脱敏（R4）。
     const created = await api.createBooking({
       ...booking,
-      contactName: MOCK_USER.name,
-      contactPhone: MOCK_USER.phone.replace(/\*/g, ''),
       station: '长沙县安沙农资自营直供中心',
     });
     setBookings((prev) => [created, ...prev]);
@@ -105,10 +114,12 @@ export default function MallWorkspace() {
           <BookingView initialType={bookingPresetType} onSubmit={handleCreateBooking} />
         )}
         {activeTab === 'orders' && <OrdersView bookings={bookings} onGoBooking={() => goBooking()} />}
-        {activeTab === 'messages' && <MessagesView bookings={bookings} />}
+        {activeTab === 'messages' && <MessagesView bookings={bookings} announcements={announcements} />}
         {activeTab === 'profile' && (
           <ProfileView
             bookingCount={bookings.length}
+            profile={profile}
+            coupon={coupon}
             onGoOrders={() => setActiveTab('orders')}
             onOpenTrace={() => setTraceOpen(true)}
           />

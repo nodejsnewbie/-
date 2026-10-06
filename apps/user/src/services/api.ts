@@ -6,6 +6,7 @@ import type {
   TraceLedgerEntry,
   TraceVerificationResult,
   WeatherInfo,
+  ReservedCapability,
 } from '../types';
 
 /**
@@ -85,8 +86,8 @@ export const api = {
   createOrder: async (
     items: { product: MallProduct; quantity: number }[],
     station?: string
-  ): Promise<{ orderId: string; totalAmount: number }> => {
-    return request<{ orderId: string; totalAmount: number }>('/orders', {
+  ): Promise<{ orderId: string; totalAmountCents: number }> => {
+    return request<{ orderId: string; totalAmountCents: number }>('/orders', {
       method: 'POST',
       body: { items, station },
     });
@@ -95,5 +96,26 @@ export const api = {
   // 5. 农业气象与飞防指数
   getWeather: async (): Promise<WeatherInfo> => {
     return request<WeatherInfo>('/weather');
+  },
+
+  // 6. 我的 / 消息（本期后端服务未接入，返回 ReservedCapability，enabled:false → 前端「待接入」）
+  getProfile: async (): Promise<
+    ReservedCapability<{ name: string; phone: string; avatar: string }>
+  > => {
+    return request<ReservedCapability<{ name: string; phone: string; avatar: string }>>(
+      '/user/profile'
+    );
+  },
+
+  getAnnouncements: async (): Promise<
+    ReservedCapability<Array<{ id: string; date: string; text: string }>>
+  > => {
+    return request<ReservedCapability<Array<{ id: string; date: string; text: string }>>>(
+      '/user/announcements'
+    );
+  },
+
+  getCoupons: async (): Promise<ReservedCapability<number>> => {
+    return request<ReservedCapability<number>>('/user/coupons');
   },
 };

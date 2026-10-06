@@ -92,6 +92,10 @@ const MALL_GET_PATHS = [
   '/api/trace/history',
   '/api/bookings',
   '/api/weather',
+  // 「我的 / 消息」预留接口（本期后端未接入，恒返回 enabled:false，确定性可入基线）
+  '/api/user/profile',
+  '/api/user/announcements',
+  '/api/user/coupons',
 ];
 
 // 正品码：与种子数据 prod-1 的 traceCode 完全一致（≥16 位，原样透传，无后缀拼接）

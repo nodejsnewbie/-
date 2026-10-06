@@ -6,6 +6,8 @@ export type {
   ServiceOrder,
   TeamMemberFeed,
   TechnicianProfile,
+  ReservedCapability,
+  ReservedReason,
 } from '@hnhall/shared';
 
 export type TabType = 'order-hall' | 'service-orders' | 'amoeba-bonus' | 'partner-profile';

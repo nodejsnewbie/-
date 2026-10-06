@@ -5,4 +5,6 @@ export type {
   TraceLedgerEntry,
   WeatherInfo,
   CartItem,
+  ReservedCapability,
+  ReservedReason,
 } from '@hnhall/shared';

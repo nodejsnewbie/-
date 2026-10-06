@@ -36,6 +36,8 @@ import type {
 } from '@hnhall/shared';
 
 import { jsonOut } from './json';
+import { maskPhone, maskIdCard } from './mask';
+import { RESERVED } from './reserved';
 
 /**
  * 数据库行 ↔ 领域/视图模型 的映射层。
@@ -47,16 +49,13 @@ import { jsonOut } from './json';
  * 1. **`null` → `undefined`**：接口响应必须能区分「字段不存在」与「字段为空」。
  *    `JSON.stringify` 会丢掉 `undefined` 键，所以这一步决定了响应字节形状。
  *    可选字段一律用 `?? undefined`（**不要**用 `||`，会把 `false` / `0` 也吞掉）。
- * 2. **不改口径**：这里只做单位换算与 null 归一，不补默认值、不删字段。
- *    已知的错误字段（窜货、示意距离、虚构分红）原样透传，等客户确认后统一清理。
+ * 2. **不改口径 / 不伪造**：这里只做 null 归一与预留合成，不补默认值。
+ *    **金额一律以库里「分」整数原样出参**（字段名 `*Cents`），不在这里换算成元——
+ *    分↔元还原下移到各前端展示层的 `formatCents`，接口契约与存储层同为「分」（R7，已消除响应层浮点违规）。
+ *    曾属虚构的能力（OCR/人脸、窜货/熔断、示意距离、分红分项、档位系数）现统一以
+ *    `RESERVED` 预留接口合成（`enabled:false, value:null`），前端渲染「待接入」——
+ *    绝不在这里造假数值（红线 R4）。接入后改用 `RESERVED` 对应的 `ready` 分支即可。
  */
-
-/** 分 → 元。 */
-const yuan = (cents: number): number => cents / 100;
-
-/** 可选金额：分 → 元，null 保持 undefined。 */
-const yuanOpt = (cents: number | null): number | undefined =>
-  cents === null ? undefined : cents / 100;
 
 // ════════════════════════════════════════════════════════════════════════════
 //  企业后台
@@ -68,7 +67,7 @@ export function toTechnician(row: TechnicianRow): Technician {
     code: row.code,
     name: row.name,
     title: row.title,
-    phone: row.phone,
+    phone: maskPhone(row.phone),
     avatar: row.avatar,
     licenseNumber: row.licenseNumber,
     licenseThumb: row.licenseThumb,
@@ -103,7 +102,7 @@ export function toWorkOrder(row: WorkOrderRow): WorkOrder {
     id: row.id,
     farmerName: row.farmerName,
     coopName: row.coopName ?? undefined,
-    phone: row.phone,
+    phone: maskPhone(row.phone),
     location: row.location,
     gridCode: row.gridCode,
     crop: row.crop,
@@ -128,7 +127,7 @@ export function toWorkOrder(row: WorkOrderRow): WorkOrder {
         : {
             id: row.assignedTechnicianId,
             name: row.assignedTechnicianName ?? '',
-            phone: row.assignedTechnicianPhone ?? '',
+            phone: maskPhone(row.assignedTechnicianPhone) ?? '',
             title: row.assignedTechnicianTitle ?? '',
             avatar: row.assignedTechnicianAvatar ?? '',
             distanceKm: row.assignedTechnicianDistanceKm ?? 0,
@@ -138,14 +137,17 @@ export function toWorkOrder(row: WorkOrderRow): WorkOrder {
     matchedCandidates:
       row.matchedCandidates === null
         ? undefined
-        : jsonOut<WorkOrder['matchedCandidates']>(row.matchedCandidates),
+        : jsonOut<WorkOrder['matchedCandidates']>(row.matchedCandidates)?.map((c) => ({
+            ...c,
+            phone: maskPhone(c.phone) ?? c.phone,
+          })),
     prescriptionCode: row.prescriptionCode ?? undefined,
     prescriptionContent: row.prescriptionContent ?? undefined,
     watermarkVerified: row.watermarkVerified ?? undefined,
     watermarkTime: row.watermarkTime ?? undefined,
     watermarkGps: row.watermarkGps ?? undefined,
     signedAt: row.signedAt ?? undefined,
-    settlementAmount: yuanOpt(row.settlementAmountCents),
+    settlementAmountCents: row.settlementAmountCents ?? undefined,
   };
 }
 
@@ -155,8 +157,8 @@ export function toAuditApplication(row: AuditApplicationRow): AuditApplication {
     code: row.code,
     applicantName: row.applicantName,
     applicantType: row.applicantType,
-    idCard: row.idCard,
-    phone: row.phone,
+    idCard: maskIdCard(row.idCard),
+    phone: maskPhone(row.phone),
     avatar: row.avatar,
     targetGrid: row.targetGrid,
     urgent: row.urgent,
@@ -170,6 +172,9 @@ export function toAuditApplication(row: AuditApplicationRow): AuditApplication {
     amoebaCoefficient: row.amoebaCoefficient,
     auditNotes: row.auditNotes,
     status: row.status as AuditApplication['status'],
+    // R5：本业务为纯人工审核，OCR / 人脸核身未实现 → 预留接口（前端「待接入」，不造假）。
+    ocrVerification: RESERVED.ocr(),
+    faceVerification: RESERVED.face(),
   };
 }
 
@@ -192,6 +197,9 @@ export function toSupplyProduct(row: SupplyProductRow): SupplyProduct {
     prescriptionCommissionRate: row.prescriptionCommissionRate,
     monthlySales: row.monthlySales,
     traceabilityNodes: jsonOut<SupplyProduct['traceabilityNodes']>(row.traceabilityNodes),
+    // R6：窜货预警 / 批次熔断本期不做 → 预留接口（前端渲染「待接入」，不伪造窜货状态）。
+    fleeMonitoring: RESERVED.flee(),
+    batchFreeze: RESERVED.batchFreeze(),
   };
 }
 
@@ -258,6 +266,8 @@ export function toTechnicianProfile(row: TechnicianProfileRow): TechnicianProfil
     avatarUrl: row.avatarUrl,
     headerProfileUrl: row.headerProfileUrl,
     logoUrl: row.logoUrl,
+    // R7：档位系数未定稿 → 预留接口（前端「待接入」）。
+    incentiveMultiplier: RESERVED.incentiveMultiplier(),
   };
 }
 
@@ -287,10 +297,13 @@ export function toServiceOrder(
     urgencyTag: row.urgencyTag ?? undefined,
     urgencyBg: row.urgencyBg ?? undefined,
     status: row.status as ServiceOrder['status'],
-    dispatchTimeText: row.dispatchTimeText,
+    dispatchedAt: row.dispatchedAt,
     distanceKm: row.distanceKm,
+    // 本期无定位能力 → 预留接口（前端「待接入」）；distanceKm 不得作派单/绩效/结算依据。
+    location: RESERVED.location(),
+    gpsCoords: RESERVED.gpsCoords(),
     farmerName: row.farmerName,
-    farmerPhone: row.farmerPhone,
+    farmerPhone: maskPhone(row.farmerPhone),
     farmerTag: row.farmerTag,
     locationName: row.locationName,
 
@@ -332,14 +345,18 @@ export function toPesticideCatalogItem(row: PesticideCatalogItemRow): Prescripti
 
 export function toAmoebaStat(row: AmoebaStatRow): AmoebaStat {
   return {
-    totalMonthIncome: yuan(row.totalMonthIncomeCents),
+    totalMonthIncomeCents: row.totalMonthIncomeCents,
     growthPct: row.growthPct,
-    serviceCommission: yuan(row.serviceCommissionCents),
+    serviceCommissionCents: row.serviceCommissionCents,
     serviceTasksCount: row.serviceTasksCount,
 
     groupTargetRate: row.groupTargetRate,
-    groupBaseline: yuan(row.groupBaselineCents),
+    groupBaseline: row.groupBaseline,
     groupTierBonus: row.groupTierBonus,
+    // R7：当前口径仅「服务净值」分成，以下三项预留/待接入（前端「待接入」，不造假金额）。
+    prescriptionDividend: RESERVED.prescriptionDividend(),
+    teamReferralDividend: RESERVED.teamReferralDividend(),
+    equityPreDraw: RESERVED.equityPreDraw(),
   };
 }
 
@@ -429,7 +446,7 @@ export function toServiceBooking(row: ServiceBookingRow): ServiceBooking {
     timeSlot: row.timeSlot,
     station: row.station,
     contactName: row.contactName,
-    contactPhone: row.contactPhone,
+    contactPhone: maskPhone(row.contactPhone),
     plotAddress: row.plotAddress,
     associatedProducts: jsonOut<string[]>(row.associatedProducts),
     notes: row.notes ?? undefined,
@@ -438,7 +455,7 @@ export function toServiceBooking(row: ServiceBookingRow): ServiceBooking {
       ? {
           name: row.agronomistName,
           certId: row.agronomistCertId ?? '',
-          phone: row.agronomistPhone ?? '',
+          phone: maskPhone(row.agronomistPhone) ?? '',
           title: row.agronomistTitle ?? '',
         }
       : undefined,

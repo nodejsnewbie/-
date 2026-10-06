@@ -5,10 +5,13 @@ import { AdminSupplyChainService, TechnicianPesticideService } from './supply-ch
 /**
  * 农资与溯源域。业务逻辑在 supply-chain.service.ts。
  *
- * ⚠️ 已知遗留（等客户确认需求后清理）：
- * - `GET /api/supply-chain` 的 `fleeStatus` 与 `freeze-batch` 属「窜货熔断」，
- *   第 3 步答复为**本期不做**，但原行为照搬保留。
- * - `totalCodedSum` / `monthScanCount` 等为硬编码示意值。
+ * 窜货预警 / 批次熔断（R6，本期不做·二期评估）以**预留接口**处理：
+ * - `GET /api/supply-chain` 每个产品带 `fleeMonitoring` / `batchFreeze`（`enabled:false`），
+ *   前端据此渲染「待接入」，不再伪造 `fleeStatus` 等状态；
+ * - `POST /api/supply-chain/freeze-batch` 如实回执「能力待接入·未下发真实冻结指令」，
+ *   不再谎报冻结成功（红线 R4/R6）。
+ *
+ * 已知遗留（等客户确认需求后处理）：`totalCodedSum` / `monthScanCount` 等为硬编码示意值。
  */
 @Controller('supply-chain')
 export class AdminSupplyChainController {

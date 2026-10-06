@@ -32,7 +32,6 @@ import {
   updateOrderStep,
   approveAudit,
   rejectAudit,
-  freezeProductBatch,
   generateBatchCodes,
   batchBankSettle,
   singleBankSettle,
@@ -150,16 +149,6 @@ export default function App() {
       loadData();
     } catch {
       showToast('操作完成', 'info');
-    }
-  };
-
-  const handleFreezeBatch = async (batchNumber: string) => {
-    try {
-      await freezeProductBatch(batchNumber);
-      showToast('已对异动批次实施电子监管码即时冻结，稽查工单已推送督导组。', 'success');
-      loadData();
-    } catch {
-      showToast('冻结指令已下发！', 'success');
     }
   };
 
@@ -314,7 +303,6 @@ export default function App() {
               {currentTab === 'supply-chain-and-traceability' && (
                 <SupplyChainAndTraceability
                   products={products}
-                  onFreezeBatch={handleFreezeBatch}
                   onGenerateCodes={handleGenerateCodes}
                   onSyncMinistry={handleSyncMinistry}
                   onShowToast={showToast}

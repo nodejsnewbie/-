@@ -4,11 +4,10 @@ import type { SupplyProduct } from '@hnhall/shared';
 import { SupplyHeader } from './components/SupplyHeader.tsx';
 import { SupplyMetrics } from './components/SupplyMetrics.tsx';
 import { ProductTraceTable } from './components/ProductTraceTable.tsx';
-import { FleeWarningModal, ScanVerifyModal, TraceDetailModal } from './components/SupplyModals.tsx';
+import { ScanVerifyModal, TraceDetailModal } from './components/SupplyModals.tsx';
 
 export interface SupplyChainAndTraceabilityProps {
   products: SupplyProduct[];
-  onFreezeBatch: (batchNumber: string) => Promise<void>;
   onGenerateCodes: (count: number) => Promise<void>;
   onSyncMinistry: () => Promise<void>;
   onShowToast: (msg: string, type?: 'success' | 'warning' | 'info') => void;
@@ -17,16 +16,13 @@ export interface SupplyChainAndTraceabilityProps {
 /** 农资供应链与溯源页（自 views/SupplyChainAndTraceability.tsx 按区块拆分而来，行为不变）。 */
 export const SupplyChainAndTraceability: React.FC<SupplyChainAndTraceabilityProps> = ({
   products,
-  onFreezeBatch,
   onGenerateCodes,
   onSyncMinistry,
   onShowToast,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [fleeFilter, setFleeFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [selectedTraceProduct, setSelectedTraceProduct] = useState<SupplyProduct | null>(null);
-  const [selectedAlertProduct, setSelectedAlertProduct] = useState<SupplyProduct | null>(null);
   const [showScanModal, setShowScanModal] = useState(false);
   const [scanCodeInput, setScanCodeInput] = useState('01069281729001921240315102008');
   const [scanResult, setScanResult] = useState<{
@@ -38,9 +34,6 @@ export const SupplyChainAndTraceability: React.FC<SupplyChainAndTraceabilityProp
   const [isSyncing, setIsSyncing] = useState(false);
 
   const filteredProducts = products.filter((p) => {
-    if (fleeFilter === 'alert' && p.fleeStatus !== 'alert') return false;
-    if (fleeFilter === 'normal' && p.fleeStatus !== 'normal') return false;
-
     if (categoryFilter === 'fungicide' && !p.name.includes('醇') && !p.name.includes('胺'))
       return false;
     if (categoryFilter === 'insecticide' && !p.name.includes('虫') && !p.name.includes('脲'))
@@ -83,20 +76,6 @@ export const SupplyChainAndTraceability: React.FC<SupplyChainAndTraceabilityProp
     }
   };
 
-  const handleExecuteFreeze = async () => {
-    if (!selectedAlertProduct) return;
-    try {
-      await onFreezeBatch(selectedAlertProduct.batchNumber);
-      onShowToast(
-        '已执行批次防伪冻结指令！防伪中心将拦截任何异地处方核销，稽查工单已推送督导组。',
-        'success',
-      );
-      setSelectedAlertProduct(null);
-    } catch {
-      onShowToast('冻结失败，请重试', 'warning');
-    }
-  };
-
   return (
     <div className="flex flex-col w-full gap-5">
       {/* Breadcrumb and Header */}
@@ -116,15 +95,12 @@ export const SupplyChainAndTraceability: React.FC<SupplyChainAndTraceabilityProp
       <ProductTraceTable
         filteredProducts={filteredProducts}
         searchQuery={searchQuery}
-        fleeFilter={fleeFilter}
         categoryFilter={categoryFilter}
         onSearchChange={setSearchQuery}
-        onFleeFilterChange={setFleeFilter}
         onCategoryFilterChange={setCategoryFilter}
         onGenerateCodes={onGenerateCodes}
         onShowToast={onShowToast}
         onSelectTrace={setSelectedTraceProduct}
-        onSelectAlert={setSelectedAlertProduct}
       />
 
       {/* Trace Detail Modal */}
@@ -133,15 +109,6 @@ export const SupplyChainAndTraceability: React.FC<SupplyChainAndTraceabilityProp
           product={selectedTraceProduct}
           onClose={() => setSelectedTraceProduct(null)}
           onShowToast={onShowToast}
-        />
-      )}
-
-      {/* Flee Warning Alert Modal */}
-      {selectedAlertProduct && (
-        <FleeWarningModal
-          product={selectedAlertProduct}
-          onClose={() => setSelectedAlertProduct(null)}
-          onExecuteFreeze={handleExecuteFreeze}
         />
       )}
 

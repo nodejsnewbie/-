@@ -138,7 +138,9 @@ export const PartnerProfileView: React.FC<PartnerProfileViewProps> = ({
               </View>
             </View>
             <View className="text-right">
-              <Text className="text-xs font-bold text-primary font-mono">+¥680.00</Text>
+              <Text className="text-[10px] font-bold text-outline border border-surface-container-high rounded-full px-1.5 py-0.5">
+                待接入
+              </Text>
               <View className="text-[10px] text-outline">带教培育分红</View>
             </View>
           </View>
@@ -154,7 +156,9 @@ export const PartnerProfileView: React.FC<PartnerProfileViewProps> = ({
               </View>
             </View>
             <View className="text-right">
-              <Text className="text-xs font-bold text-primary font-mono">+¥420.00</Text>
+              <Text className="text-[10px] font-bold text-outline border border-surface-container-high rounded-full px-1.5 py-0.5">
+                待接入
+              </Text>
               <View className="text-[10px] text-outline">机队协同分红</View>
             </View>
           </View>

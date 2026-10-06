@@ -45,20 +45,20 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
         </div>
 
         <div className="mt-3 space-y-2.5 text-[12px]">
-          <div className="p-3 rounded-xl bg-error-container/20 border border-error-container/40 space-y-1">
-            <div className="flex items-center justify-between font-bold text-error">
+          <div className="p-3 rounded-xl bg-surface-container-low border border-surface-container space-y-1">
+            <div className="flex items-center justify-between font-bold text-on-surface-variant">
               <span className="flex items-center gap-1">
-                <span className="material-symbols-outlined text-[16px]">crisis_alert</span>
-                窜货异常拦截 (常德鼎城区)
+                <span className="material-symbols-outlined text-[16px]">info</span>
+                窜货预警 · 监测能力待接入
               </span>
-              <span>10分钟前</span>
+              <span className="text-[11px] font-medium">预留接口</span>
             </div>
             <p className="text-on-surface">
-              批次 HN-20240218-B (40% 咪鲜胺)
-              在非授权区域发生异常频发扫码，建议立即执行电子监管码冻结。
+              「窜货预警 / 批次熔断」本期不做、二期评估（R6）。当前无实时窜货监测运行，界面与处置入口已预留，
+              不会产生真实拦截或冻结事件。
             </p>
             <button onClick={onGoToSupplyChain} className="text-primary font-bold hover:underline">
-              前往处置工单 →
+              查看溯源与预留能力 →
             </button>
           </div>
 
@@ -72,7 +72,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
             </div>
             <p className="text-on-surface">
               申请人 陈志平 (APP-2024-8902)
-              提交了益阳市赫山区法定农药经营许可证原件，OCR已比对完成。
+              提交了益阳市赫山区法定农药经营许可证原件，等待审核员人工核验（本期无 OCR 自动比对，该能力预留待接入）。
             </p>
             <button onClick={onOpenAuditDrawer} className="text-primary font-bold hover:underline">
               开启资质审核工作台 →

@@ -1,7 +1,8 @@
 import Taro from '@tarojs/taro';
 import { showAlert } from './utils/platform';
+import { centsToYuan } from './utils/format';
 import { Button, Text, View } from '@tarojs/components';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   TabType,
   ViewScreen,
@@ -13,13 +14,6 @@ import {
   FieldEvidencePhoto,
   PrescriptionDrug,
 } from './types';
-import {
-  INITIAL_TECHNICIAN,
-  INITIAL_ORDERS,
-  INITIAL_AMOEBA,
-  INITIAL_FEEDS,
-  INITIAL_TRANSACTIONS,
-} from './data/mockData';
 import { api } from './services/api';
 
 import { Header } from './components/Header';
@@ -40,18 +34,30 @@ import { ImageViewerModal } from './components/ImageViewerModal';
 import { ExpertSupportModal } from './components/ExpertSupportModal';
 import { OptionAgreementModal } from './components/OptionAgreementModal';
 
+/**
+ * 技师端工作台容器。
+ *
+ * 数据契约（红线 R4「Mock/假数据不得充当真实数据源」+ 项目「所有数据来自后端」）：
+ * - **不再以本地 mock 初始化业务 state**：初始为空态，唯一来源是 `/api/tech/*`。
+ * - 加载失败 → 显示可见错误与重试入口，**不做静默本地兜底**（旧「乐观 fallback」已废弃）。
+ * - 写操作失败仍会 `console.warn`，但不再有 mock 数据可回退——以接口结果为准。
+ */
 export default function App() {
   // Navigation State
   const [currentView, setCurrentView] = useState<ViewScreen>('tab-view');
   const [activeTab, setActiveTab] = useState<TabType>('order-hall');
-  const [selectedOrder, setSelectedOrder] = useState<ServiceOrder>(INITIAL_ORDERS[0]);
 
-  // Business State
-  const [technician, setTechnician] = useState<TechnicianProfile>(INITIAL_TECHNICIAN);
-  const [orders, setOrders] = useState<ServiceOrder[]>(INITIAL_ORDERS);
-  const [amoebaStats, setAmoebaStats] = useState<AmoebaStat>(INITIAL_AMOEBA);
-  const [teamFeeds, setTeamFeeds] = useState<TeamMemberFeed[]>(INITIAL_FEEDS);
-  const [transactions, setTransactions] = useState<RevenueTransaction[]>(INITIAL_TRANSACTIONS);
+  // Business State — 全部来自后端，初始为空（无 mock 兜底）
+  const [technician, setTechnician] = useState<TechnicianProfile | null>(null);
+  const [orders, setOrders] = useState<ServiceOrder[]>([]);
+  const [amoebaStats, setAmoebaStats] = useState<AmoebaStat | null>(null);
+  const [teamFeeds, setTeamFeeds] = useState<TeamMemberFeed[]>([]);
+  const [transactions, setTransactions] = useState<RevenueTransaction[]>([]);
+  const [selectedOrder, setSelectedOrder] = useState<ServiceOrder | null>(null);
+
+  // Load State（可见加载 / 错误反馈，禁止静默降级）
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Modals state
   const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
@@ -66,46 +72,49 @@ export default function App() {
   // Desktop simulator frame state (allows testing both 390px mobile viewport and responsive full)
   const [isMobileFrame, setIsMobileFrame] = useState(true);
 
-  // Fetch initial data from backend API
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [techData, ordersData, statsData, txData, feedData] = await Promise.allSettled([
-          api.getTechnician(),
-          api.getOrders(),
-          api.getAmoebaStats(),
-          api.getTransactions(),
-          api.getFeeds(),
-        ]);
+  // Fetch initial data from backend API — 任一必需接口失败即进入可见错误态，不回退本地数据
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const [techData, ordersData, statsData, txData, feedData] = await Promise.all([
+        api.getTechnician(),
+        api.getOrders(),
+        api.getAmoebaStats(),
+        api.getTransactions(),
+        api.getFeeds(),
+      ]);
 
-        if (techData.status === 'fulfilled' && techData.value) setTechnician(techData.value);
-        if (ordersData.status === 'fulfilled' && ordersData.value?.length) {
-          setOrders(ordersData.value);
-          setSelectedOrder(ordersData.value[0]);
-        }
-        if (statsData.status === 'fulfilled' && statsData.value) setAmoebaStats(statsData.value);
-        if (txData.status === 'fulfilled' && txData.value?.length) setTransactions(txData.value);
-        if (feedData.status === 'fulfilled' && feedData.value?.length) setTeamFeeds(feedData.value);
-      } catch (err) {
-        console.warn('Backend initial fetch info:', err);
-      }
-    };
-
-    fetchData();
+      setTechnician(techData);
+      setOrders(ordersData);
+      setSelectedOrder((prev) => prev ?? ordersData[0] ?? null);
+      setAmoebaStats(statsData);
+      setTransactions(txData);
+      setTeamFeeds(feedData);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '未知错误';
+      console.warn('Backend initial fetch failed:', err);
+      setLoadError(msg);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   // Handlers
   const handleToggleOnline = async () => {
+    if (!technician) return;
     const targetStatus = !technician.isOnline;
-    setTechnician((prev) => ({
-      ...prev,
-      isOnline: targetStatus,
-    }));
+    setTechnician((prev) => (prev ? { ...prev, isOnline: targetStatus } : prev));
     try {
       const res = await api.updateTechnicianStatus(targetStatus);
       if (res) setTechnician(res);
     } catch (e) {
-      console.warn('API update failed, maintained local state', e);
+      console.warn('API update status failed', e);
+      showAlert('在线状态同步失败，请稍后重试');
     }
   };
 
@@ -118,9 +127,7 @@ export default function App() {
     setOrders((prev) =>
       prev.map((o) => (o.id === orderId ? { ...o, status: 'in_progress' } : o))
     );
-    if (selectedOrder.id === orderId) {
-      setSelectedOrder((prev) => ({ ...prev, status: 'in_progress' }));
-    }
+    setSelectedOrder((prev) => (prev && prev.id === orderId ? { ...prev, status: 'in_progress' } : prev));
     try {
       const updated = await api.claimOrder(orderId);
       if (updated) {
@@ -129,6 +136,7 @@ export default function App() {
       }
     } catch (e) {
       console.warn('API claim failed', e);
+      showAlert('接单失败，请检查网络后重试');
     }
   };
 
@@ -138,6 +146,9 @@ export default function App() {
     setActiveTab('order-hall');
     try {
       await api.declineOrder(orderId);
+      // 以接口为准：重取列表，避免本地乐观状态与后端漂移
+      const refreshed = await api.getOrders();
+      setOrders(refreshed);
     } catch (e) {
       console.warn('API decline failed', e);
     }
@@ -154,6 +165,7 @@ export default function App() {
   };
 
   const handlePhotoCaptured = async (photo: FieldEvidencePhoto) => {
+    if (!selectedOrder) return;
     const updatedPhotos = [...(selectedOrder.fieldEvidencePhotos || []), photo];
     const updatedOrder = {
       ...selectedOrder,
@@ -169,10 +181,12 @@ export default function App() {
       });
     } catch (e) {
       console.warn('API add photo sync note', e);
+      showAlert('现场照片上传后端同步失败，已保留本地草稿');
     }
   };
 
   const handleAddDrug = (drug: PrescriptionDrug) => {
+    if (!selectedOrder) return;
     const existing = selectedOrder.prescriptionDrugs.find((d) => d.id === drug.id);
     let nextDrugs: PrescriptionDrug[];
     if (existing) {
@@ -189,7 +203,8 @@ export default function App() {
   };
 
   const handleDeliverySigned = async (orderId: string, signature: string) => {
-    const now = new Date().toLocaleString();
+    if (!selectedOrder || !amoebaStats) return;
+    const now = new Date().toISOString();
     const updated = {
       ...selectedOrder,
       status: 'completed' as const,
@@ -202,63 +217,41 @@ export default function App() {
       const res = await api.signDeliveryNote(orderId, signature);
       if (res?.order) {
         handleUpdateOrder(res.order);
-        if (res.newTotalIncome) {
-          setAmoebaStats((prev) => ({
-            ...prev,
-            totalMonthIncome: res.newTotalIncome,
-            serviceTasksCount: prev.serviceTasksCount + 1,
-          }));
+        if (res.newTotalIncomeCents) {
+          setAmoebaStats((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  totalMonthIncomeCents: res.newTotalIncomeCents,
+                  serviceTasksCount: prev.serviceTasksCount + 1,
+                }
+              : prev
+          );
         }
+        // 以接口为准刷新流水
+        const tx = await api.getTransactions();
+        setTransactions(tx);
       }
     } catch (e) {
       console.warn('API delivery sign sync note', e);
-      // Fallback local update
-      const totalDrugs = selectedOrder.prescriptionDrugs.reduce((a, b) => a + b.price * b.qty, 0);
-      const newTx: RevenueTransaction = {
-        id: `tx-${Date.now()}`,
-        title: `${selectedOrder.farmerName}水稻病虫害处方交付`,
-        sub: `工单费 ¥${selectedOrder.laborFee} + 处方分润 ¥${(totalDrugs * 0.12).toFixed(2)}`,
-        amount: selectedOrder.estimatedFee + 38.4,
-        type: 'mixed',
-        time: '刚刚',
-      };
-      setTransactions((prev) => [newTx, ...prev]);
-      setAmoebaStats((prev) => ({
-        ...prev,
-        totalMonthIncome: prev.totalMonthIncome + newTx.amount,
-        serviceCommission: prev.serviceCommission + selectedOrder.laborFee,
-        serviceTasksCount: prev.serviceTasksCount + 1,
-      }));
+      showAlert('签收同步失败，请稍后重试');
     }
   };
 
   const handleWithdrawConfirm = async (amount: number, channel: string) => {
-    setAmoebaStats((prev) => ({
-      ...prev,
-      totalMonthIncome: Math.max(0, prev.totalMonthIncome - amount),
-    }));
-
+    if (!amoebaStats) return;
     try {
       const res = await api.withdraw(amount, channel);
-      if (res?.remainingBalance !== undefined) {
-        setAmoebaStats((prev) => ({
-          ...prev,
-          totalMonthIncome: res.remainingBalance,
-        }));
+      if (res?.remainingBalanceCents !== undefined) {
+        setAmoebaStats((prev) =>
+          prev ? { ...prev, totalMonthIncomeCents: res.remainingBalanceCents } : prev
+        );
       }
       const updatedTx = await api.getTransactions();
       if (updatedTx) setTransactions(updatedTx);
     } catch (e) {
       console.warn('API withdraw sync note', e);
-      const newTx: RevenueTransaction = {
-        id: `tx-wd-${Date.now()}`,
-        title: '合伙人收益即时提现支出',
-        sub: '资金由银行专户秒级直划',
-        amount: -amount,
-        type: 'mixed',
-        time: '刚刚',
-      };
-      setTransactions((prev) => [newTx, ...prev]);
+      showAlert('提现请求失败，请稍后重试');
     }
   };
 
@@ -267,14 +260,39 @@ export default function App() {
     if (unclaimed) {
       handleSelectOrder(unclaimed);
     } else {
-      showAlert('已启动智能抢单引擎：当前方圆8公里内已为您自动锁定最优植保急单！');
-      handleSelectOrder(orders[0]);
+      showAlert('暂无可抢工单，请稍后刷新公共池');
     }
   };
 
   const handleBackToMain = () => {
     setCurrentView('tab-view');
   };
+
+  // 加载 / 错误态：可见反馈，不展示本地假数据（红线 R4）
+  if (loading) {
+    return (
+      <View className="flex items-center justify-center min-h-screen bg-[#0f1712] text-white">
+        <Text>正在从服务端加载工单与经营数据…</Text>
+      </View>
+    );
+  }
+
+  if (loadError || !technician || !amoebaStats) {
+    return (
+      <View className="flex flex-col items-center justify-center gap-3 min-h-screen bg-[#0f1712] text-white p-6 text-center">
+        <Text className="font-bold text-[16px]">数据加载失败</Text>
+        <Text className="text-xs opacity-80">
+          {loadError ?? '后端未返回技师档案'}。请确认统一后端已启动（`/api/tech`）且微信开发者工具已勾选「不校验合法域名」。
+        </Text>
+        <Button
+          onClick={fetchData}
+          className="mt-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-bold"
+        >
+          重新加载
+        </Button>
+      </View>
+    );
+  }
 
   return (
     <View className="min-h-screen bg-[#0f1712] flex flex-col items-center justify-start text-on-surface antialiased py-0 sm:py-6 select-none font-sans">
@@ -320,7 +338,7 @@ export default function App() {
 
         {/* Scrollable View Content */}
         <View className="flex-1 overflow-y-auto w-full bg-surface no-scrollbar">
-          {currentView === 'order-detail' ? (
+          {currentView === 'order-detail' && selectedOrder ? (
             <OrderDetailView
               order={selectedOrder}
               onAcceptOrder={handleAcceptOrder}
@@ -332,10 +350,10 @@ export default function App() {
                 showAlert('已复制地块地址至剪贴板！');
               }}
               onCallFarmer={(phone, name) => {
-                showAlert(`正在模拟呼叫农户 ${name} (${phone})...`);
+                showAlert(`正在呼叫农户 ${name} (${phone})...`);
               }}
             />
-          ) : currentView === 'prescription-builder' ? (
+          ) : currentView === 'prescription-builder' && selectedOrder ? (
             <PrescriptionBuilderView
               order={selectedOrder}
               onUpdateOrder={handleUpdateOrder}
@@ -426,7 +444,7 @@ export default function App() {
         <WithdrawModal
           isOpen={isWithdrawModalOpen}
           onClose={() => setIsWithdrawModalOpen(false)}
-          availableBalance={amoebaStats.totalMonthIncome}
+          availableBalance={centsToYuan(amoebaStats.totalMonthIncomeCents)}
           onConfirmWithdraw={handleWithdrawConfirm}
         />
 

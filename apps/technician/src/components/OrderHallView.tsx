@@ -1,3 +1,4 @@
+import { formatCents, formatRelativeTime } from '../utils/format';
 import { Button, Image, Text, View } from '@tarojs/components';
 import React, { useState } from 'react';
 import { TechnicianProfile, ServiceOrder, TabType } from '../types';
@@ -21,7 +22,6 @@ export const OrderHallView: React.FC<OrderHallViewProps> = ({
   onChangeTab,
   onOpenPrescriptionBuilder,
 }) => {
-  const [filterRadius, setFilterRadius] = useState<'all' | '5km' | '10km'>('10km');
   const [claimedOrderIds, setClaimedOrderIds] = useState<string[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -38,11 +38,6 @@ export const OrderHallView: React.FC<OrderHallViewProps> = ({
     setClaimedOrderIds((prev) => [...prev, order.id]);
     showToast(`已成功锁定工单：${order.title}`);
   };
-
-  const filteredOrders = orders.filter((o) => {
-    if (filterRadius === '5km') return o.distanceKm <= 5.0;
-    return true;
-  });
 
   const activeInServiceOrder = orders.find((o) => o.status === 'in_progress') || orders[0];
 
@@ -141,7 +136,7 @@ export const OrderHallView: React.FC<OrderHallViewProps> = ({
           <View className="text-[24px] text-tertiary-container font-extrabold mt-0.5 leading-none">
             3
           </View>
-          <Text className="text-[10px] text-on-surface-variant mt-1">方圆8km派送</Text>
+          <Text className="text-[10px] text-on-surface-variant mt-1">待处理工单</Text>
         </View>
 
         <View
@@ -253,18 +248,12 @@ export const OrderHallView: React.FC<OrderHallViewProps> = ({
             3单急需
           </Text>
         </View>
-        <Button
-          onClick={() => setFilterRadius(filterRadius === '10km' ? '5km' : '10km')}
-          className="flex items-center gap-1 text-on-surface-variant font-medium text-xs cursor-pointer hover:text-primary transition-colors"
-        >
-          <Text className="material-symbols-outlined text-[15px]">tune</Text>
-          <Text>安沙镇周边 {filterRadius}</Text>
-        </Button>
+        {/* 本期无定位能力，不提供距离范围筛选（注意事项2：distanceKm 不得作派单决策依据） */}
       </View>
 
       {/* 订单卡片列表流 */}
       <View className="flex flex-col gap-2.5">
-        {filteredOrders.map((order) => {
+        {orders.map((order) => {
           const isClaimed = claimedOrderIds.includes(order.id);
 
           return (
@@ -293,7 +282,7 @@ export const OrderHallView: React.FC<OrderHallViewProps> = ({
                 </View>
                 <View className="text-[10px] text-on-surface-variant shrink-0 flex items-center gap-0.5 font-medium">
                   <Text className="material-symbols-outlined text-[12px] text-outline">schedule</Text>
-                  <Text>{order.dispatchTimeText}</Text>
+                  <Text>{formatRelativeTime(order.dispatchedAt)}</Text>
                 </View>
               </View>
 
@@ -307,7 +296,18 @@ export const OrderHallView: React.FC<OrderHallViewProps> = ({
                     {order.farmerName}
                   </Text>
                   <Text className="text-outline-variant">|</Text>
-                  <Text className="text-primary font-bold shrink-0">距您 {order.distanceKm}km</Text>
+                  {order.location?.enabled && order.location.value ? (
+                    <Text className="text-primary font-bold shrink-0">
+                      距您约 {order.location.value.distanceKm}km
+                    </Text>
+                  ) : (
+                    <Text className="text-[10px] text-outline shrink-0 flex items-center gap-0.5">
+                      <Text className="material-symbols-outlined text-[11px]">
+                        gps_off
+                      </Text>
+                      距离 · 定位待接入
+                    </Text>
+                  )}
                 </View>
                 <Button
                   href={`tel:${order.farmerPhone}`}
@@ -341,7 +341,7 @@ export const OrderHallView: React.FC<OrderHallViewProps> = ({
                   <Text className="text-[11px] text-on-surface-variant">工单标准报酬</Text>
                   <View className="text-[20px] text-tertiary-container font-extrabold leading-none">
                     <Text className="text-xs font-semibold">¥</Text>
-                    {order.estimatedFee.toFixed(2)}
+                    {formatCents(order.estimatedFeeCents)}
                   </View>
                 </View>
 

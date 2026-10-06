@@ -1,7 +1,7 @@
 import { Text, View } from '@tarojs/components';
 import React from 'react';
 import type { ServiceBooking } from '../types';
-import { statusStepIndex } from '../data/mockData';
+import { statusStepIndex } from '../constants/presentation';
 
 const STEPS = ['待接单', '已接单', '服务中', '已完成'];
 

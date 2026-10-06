@@ -1,7 +1,7 @@
 import { Text, View } from '@tarojs/components';
 import React, { useState } from 'react';
 import type { ServiceBooking } from '../types';
-import { BOOKING_STATUS_TEXT, SERVICE_TYPE_TEXT, statusStepIndex } from '../data/mockData';
+import { BOOKING_STATUS_TEXT, SERVICE_TYPE_TEXT, statusStepIndex } from '../constants/presentation';
 import { StatusSteps } from './StatusSteps';
 
 interface OrdersViewProps {

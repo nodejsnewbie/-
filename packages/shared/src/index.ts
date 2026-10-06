@@ -22,6 +22,9 @@ export type {
   FulfillmentEvent,
 } from './types/index.ts';
 
+/** 预留能力接口（OCR/人脸、窜货熔断、技师分红/定位等「待接入」字段的统一契约）。 */
+export type { ReservedCapability, ReservedReason } from './types/reserved.ts';
+
 export type {
   TechnicianProfile,
   PrescriptionDrug,

@@ -1,7 +1,9 @@
 import React from 'react';
 import type { SupplyProduct } from '@hnhall/shared';
 
-/** 供应链域三个弹窗：链式溯源详情 / 防窜货预警处置 / 扫码验真（自 SupplyChainAndTraceability 原样迁入）。 */
+import { formatDateTime } from '../../../utils/format.ts';
+
+/** 供应链域两个弹窗：链式溯源详情 / 扫码验真。R6「窜货预警 / 批次熔断」以预留接口呈现（UI 已建，后端 enabled=false → 显示「待接入」，不伪造窜货状态/冻结动作）。 */
 
 interface TraceDetailModalProps {
   product: SupplyProduct;
@@ -77,11 +79,59 @@ export const TraceDetailModal: React.FC<TraceDetailModalProps> = ({
                 <div key={idx} className="flex items-start gap-2">
                   <span className="w-2 h-2 rounded-full bg-secondary shrink-0 mt-1.5"></span>
                   <span>
-                    <strong className="text-on-surface font-mono">{n.time}</strong> {n.desc}
+                    <strong className="text-on-surface font-mono">{formatDateTime(n.time)}</strong>{' '}
+                    {n.desc}
                   </span>
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Reserved: 窜货预警 / 批次熔断（R6 本期不做·二期评估，UI 预留，不伪造状态或冻结动作） */}
+          <div className="p-3 rounded-xl bg-surface-container-low border border-dashed border-surface-container">
+            <div className="flex items-center gap-1.5 mb-2">
+              <span className="material-symbols-outlined text-outline text-[18px]">policy</span>
+              <div className="font-bold text-on-surface text-[12px]">窜货预警 / 批次熔断</div>
+              <span className="text-[11px] text-on-surface-variant/70">
+                预留接口 · 本期未接入，不作溯源结论依据
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-[12px]">
+              {(
+                [
+                  ['窜货预警', product.fleeMonitoring],
+                  ['批次熔断', product.batchFreeze],
+                ] as const
+              ).map(([fallbackLabel, cap]) => (
+                <div
+                  key={fallbackLabel}
+                  className="flex items-center justify-between p-2.5 rounded bg-surface-container"
+                >
+                  <span className="text-on-surface">{cap?.label ?? fallbackLabel}</span>
+                  {cap?.enabled && cap?.value !== null ? (
+                    <span className="font-bold text-primary">{cap.value.statusText}</span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant text-[11px] font-bold">
+                      待接入{cap?.reason ? ` · ${cap.reason}` : ''}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+            <button
+              className="mt-2.5 w-full py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant text-[12px] font-medium border border-surface-container"
+              onClick={() =>
+                onShowToast(
+                  '窜货预警 / 批次熔断本期未接入（二期评估），界面已预留，本次未对真实监管链路下发冻结指令。',
+                  'warning'
+                )
+              }
+            >
+              <span className="material-symbols-outlined text-[15px] align-middle">
+                freeze
+              </span>
+              <span className="align-middle"> 批次冻结（本期预留）</span>
+            </button>
           </div>
         </div>
 
@@ -100,92 +150,6 @@ export const TraceDetailModal: React.FC<TraceDetailModalProps> = ({
             }}
           >
             下载国家存证报告
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-interface FleeWarningModalProps {
-  product: SupplyProduct;
-  onClose: () => void;
-  onExecuteFreeze: () => void;
-}
-
-export const FleeWarningModal: React.FC<FleeWarningModalProps> = ({
-  product,
-  onClose,
-  onExecuteFreeze,
-}) => {
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4"
-      onClick={onClose}
-    >
-      <div
-        className="bg-surface-container-lowest rounded-2xl max-w-lg w-full p-6 shadow-2xl relative border border-surface-container"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center gap-2 text-error mb-2">
-          <span className="material-symbols-outlined text-[24px]">crisis_alert</span>
-          <h3 className="text-[17px] font-bold text-error">防伪窜货预警处置中心</h3>
-        </div>
-        <p className="text-[12px] text-on-surface-variant">
-          检测到该批次药品在非授权授权经营区域发生频发扫码，触发供应链风险熔断：
-        </p>
-
-        <div className="mt-3 p-3 rounded-xl bg-error-container/30 space-y-1.5 text-[12px] border border-error-container">
-          <div className="flex justify-between">
-            <span className="text-on-surface-variant">预警商品:</span>
-            <span className="font-bold text-on-surface">{product.name}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-on-surface-variant">登记证号:</span>
-            <span className="font-mono text-on-surface">{product.registrationNumber}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-on-surface-variant">异动批次:</span>
-            <span className="font-mono text-on-surface">{product.batchNumber}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-on-surface-variant">违规异常点:</span>
-            <span className="font-bold text-error">{product.fleeLocation}</span>
-          </div>
-        </div>
-
-        <div className="mt-4 flex flex-col gap-2">
-          <label className="text-[12px] font-bold text-on-surface">处置动作建议</label>
-          <div className="flex flex-col gap-2 text-[12px] text-on-surface">
-            <label className="flex items-center gap-2 cursor-pointer p-2 rounded-lg bg-surface-container-low border border-surface-container">
-              <input
-                defaultChecked
-                className="accent-primary"
-                name="alertAction"
-                type="radio"
-                value="lock"
-              />
-              <span>对该异动批次实施电子监管码即时冻结 (禁止处方核销)</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer p-2 rounded-lg bg-surface-container-low border border-surface-container">
-              <input className="accent-primary" name="alertAction" type="radio" value="team" />
-              <span>派单常德区域督导员 4 小时内现场稽查</span>
-            </label>
-          </div>
-        </div>
-
-        <div className="mt-5 flex justify-end gap-2 border-t border-surface-container pt-3">
-          <button
-            className="px-4 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface text-[13px]"
-            onClick={onClose}
-          >
-            稍后处置
-          </button>
-          <button
-            className="px-5 py-2 rounded-lg bg-error hover:bg-error/90 text-on-error text-[13px] font-bold shadow-xs active:scale-95"
-            onClick={onExecuteFreeze}
-          >
-            执行熔断处置
           </button>
         </div>
       </div>

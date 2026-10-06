@@ -4,30 +4,30 @@ import type { SupplyProduct } from '@hnhall/shared';
 interface ProductTraceTableProps {
   filteredProducts: SupplyProduct[];
   searchQuery: string;
-  fleeFilter: string;
   categoryFilter: string;
   onSearchChange: (v: string) => void;
-  onFleeFilterChange: (v: string) => void;
   onCategoryFilterChange: (v: string) => void;
   onGenerateCodes: (count: number) => void;
   onShowToast: (msg: string, type?: 'success' | 'warning' | 'info') => void;
   onSelectTrace: (p: SupplyProduct) => void;
-  onSelectAlert: (p: SupplyProduct) => void;
 }
 
-/** Section A：一物一码供应链与商品溯源库（筛选 + 表格 + 表尾，原样迁入）。 */
+/**
+ * Section A：一物一码供应链与商品溯源库（筛选 + 表格 + 表尾）。
+ *
+ * ⚠️ 依据红线 R6：「窜货预警 / 批次熔断」本期不做，相关字段
+ * （fleeStatus / fleeStatusText / fleeLocation）已从 `@hnhall/shared` 与界面移除，
+ * 不得以「示意」形式保留（否则与 R4「Mock 不得伪装成真实能力」冲突）。
+ */
 export const ProductTraceTable: React.FC<ProductTraceTableProps> = ({
   filteredProducts,
   searchQuery,
-  fleeFilter,
   categoryFilter,
   onSearchChange,
-  onFleeFilterChange,
   onCategoryFilterChange,
   onGenerateCodes,
   onShowToast,
   onSelectTrace,
-  onSelectAlert,
 }) => {
   return (
     <section className="bg-surface-container-lowest rounded-xl p-5 shadow-xs flex flex-col gap-4 border border-surface-container">
@@ -42,7 +42,7 @@ export const ProductTraceTable: React.FC<ProductTraceTableProps> = ({
               </span>
             </h2>
             <p className="text-[12px] text-on-surface-variant">
-              严格对标农业农村部农药标签追溯二维码标准规范，防伪、防窜货与植保配药溯源闭环联动。
+              严格对标农业农村部农药标签追溯二维码标准规范，防伪与植保配药溯源闭环联动。
             </p>
           </div>
         </div>
@@ -92,18 +92,6 @@ export const ProductTraceTable: React.FC<ProductTraceTableProps> = ({
           />
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="text-on-surface-variant font-semibold">窜货预警状态:</span>
-          <select
-            value={fleeFilter}
-            onChange={(e) => onFleeFilterChange(e.target.value)}
-            className="bg-surface-container-lowest text-on-surface text-[12px] font-medium rounded-lg px-2.5 py-1.5 border border-surface-container outline-none shadow-xs cursor-pointer"
-          >
-            <option value="all">全部预警状态</option>
-            <option value="normal">正常 (绿标通过)</option>
-            <option value="alert">预警 (跨区扫码)</option>
-          </select>
-        </div>
-        <div className="flex items-center gap-1.5">
           <span className="text-on-surface-variant font-semibold">分红品类:</span>
           <select
             value={categoryFilter}
@@ -128,7 +116,6 @@ export const ProductTraceTable: React.FC<ProductTraceTableProps> = ({
               <th className="p-3 whitespace-nowrap">生产批次与日期</th>
               <th className="p-3 whitespace-nowrap text-right">已赋码总量</th>
               <th className="p-3 whitespace-nowrap text-right">田间扫码激活量</th>
-              <th className="p-3 whitespace-nowrap text-center">防伪窜货预警</th>
               <th className="p-3 whitespace-nowrap text-right">处方分红比例</th>
               <th className="p-3 whitespace-nowrap text-right">关联销售额 (本月)</th>
               <th className="p-3 whitespace-nowrap text-center">操作与溯源链</th>
@@ -136,22 +123,11 @@ export const ProductTraceTable: React.FC<ProductTraceTableProps> = ({
           </thead>
           <tbody className="divide-y divide-surface-container text-on-surface">
             {filteredProducts.map((p) => {
-              const isAlert = p.fleeStatus === 'alert';
-
               return (
-                <tr
-                  key={p.id}
-                  className={`hover:bg-surface-container-low transition-colors ${
-                    isAlert ? 'bg-error-container/20' : ''
-                  }`}
-                >
+                <tr key={p.id} className="hover:bg-surface-container-low transition-colors">
                   <td className="p-3">
                     <div className="flex items-center gap-2.5">
-                      <div
-                        className={`w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center font-bold ${
-                          isAlert ? 'text-error' : 'text-primary'
-                        }`}
-                      >
+                      <div className="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center font-bold text-primary">
                         <span className="material-symbols-outlined text-[22px]">{p.iconType}</span>
                       </div>
                       <div>
@@ -178,31 +154,15 @@ export const ProductTraceTable: React.FC<ProductTraceTableProps> = ({
                   </td>
 
                   <td className="p-3 text-right">
-                    <div
-                      className={`font-mono font-bold text-[12px] ${isAlert ? 'text-on-surface' : 'text-secondary'}`}
-                    >
+                    <div className="font-mono font-bold text-[12px] text-secondary">
                       {p.scanCount.toLocaleString()} {p.scanCountUnit}
                     </div>
                     <div className="w-24 bg-surface-container rounded-full h-1.5 ml-auto mt-1 overflow-hidden">
                       <div
-                        className={`h-full rounded-full ${isAlert ? 'bg-error' : 'bg-secondary'}`}
+                        className="h-full rounded-full bg-secondary"
                         style={{ width: `${p.scanProgressPct}%` }}
                       ></div>
                     </div>
-                  </td>
-
-                  <td className="p-3 text-center">
-                    {isAlert ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-error-container text-on-error-container text-[11px] font-bold">
-                        <span className="material-symbols-outlined text-[13px]">fmd_bad</span>
-                        {p.fleeStatusText}
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-secondary-container text-on-secondary-container text-[11px] font-bold">
-                        <span className="w-1.5 h-1.5 rounded-full bg-secondary"></span> 正常
-                        (全域可控)
-                      </span>
-                    )}
                   </td>
 
                   <td className="p-3 text-right">
@@ -216,21 +176,12 @@ export const ProductTraceTable: React.FC<ProductTraceTableProps> = ({
                   </td>
 
                   <td className="p-3 text-center">
-                    {isAlert ? (
-                      <button
-                        onClick={() => onSelectAlert(p)}
-                        className="text-error hover:text-on-error-container text-[12px] font-bold underline underline-offset-4 decoration-error/40 cursor-pointer"
-                      >
-                        窜货处置工单
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => onSelectTrace(p)}
-                        className="text-primary hover:text-primary-container text-[12px] font-semibold underline underline-offset-4 decoration-primary/40 cursor-pointer"
-                      >
-                        查看溯源凭证
-                      </button>
-                    )}
+                    <button
+                      onClick={() => onSelectTrace(p)}
+                      className="text-primary hover:text-primary-container text-[12px] font-semibold underline underline-offset-4 decoration-primary/40 cursor-pointer"
+                    >
+                      查看溯源凭证
+                    </button>
                   </td>
                 </tr>
               );

@@ -1,4 +1,5 @@
 import { showAlert } from '../utils/platform';
+import { formatCents, formatRelativeTime } from '../utils/format';
 import { Button, Image, Text, View } from '@tarojs/components';
 import React, { useState } from 'react';
 import { TechnicianProfile, AmoebaStat, TeamMemberFeed, RevenueTransaction } from '../types';
@@ -51,11 +52,6 @@ export const AmoebaBonusView: React.FC<AmoebaBonusViewProps> = ({
               <Text className="text-[10px] text-amber-200 font-mono ml-0.5">
                 {technician.partnerCode}
               </Text>
-            </View>
-
-            <View className="flex items-center gap-1 bg-amber-950/60 text-amber-200 px-2 py-0.5 rounded-full text-[11px] font-bold border border-amber-500/30">
-              <Text className="material-symbols-outlined text-[13px]">workspace_premium</Text>
-              <Text>激励系数 {technician.incentiveMultiplier}x</Text>
             </View>
           </View>
 
@@ -115,10 +111,10 @@ export const AmoebaBonusView: React.FC<AmoebaBonusViewProps> = ({
               <Text>本月累计总收益</Text>
               <Text
                 className="material-symbols-outlined text-[14px] cursor-pointer text-outline"
-                title="阿米巴自主核算周期收益：包含服务单提成、处方销售佣金、徒弟业绩分红及期权池加权预提"
+                title="阿米巴自主核算周期收益：仅来自上门服务的「服务净值」分成（最终分档口径与税目以公司确认制度为准）"
                 onClick={() =>
                   showAlert(
-                    '阿米巴核算模式：\n1. 上门服务费：技师自留 40%~60%\n2. 处方药剂：享自营药库 7%~15% 分润\n3. 团队裂变：享有徒弟工单永久 5% 育人奖励\n4. 年终期权：根据小组净利润参与年终二次分红'
+                    '阿米巴核算口径（建议值，待确认）：\n1. 分红仅来自上门服务收入（服务净值），不含药剂销售\n2. 服务费按服务净值计提分成\n3. 具体分档系数与税目以公司确认的阿米巴制度为准'
                   )
                 }
               >
@@ -127,7 +123,7 @@ export const AmoebaBonusView: React.FC<AmoebaBonusViewProps> = ({
             </View>
             <View className="flex items-baseline gap-1 mt-1">
               <Text className="text-primary text-[26px] font-extrabold tracking-tight">
-                ¥{stats.totalMonthIncome.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                ¥{formatCents(stats.totalMonthIncomeCents)}
               </Text>
               <View className="flex items-center text-primary-container text-xs font-bold ml-1">
                 <Text className="material-symbols-outlined text-[14px]">trending_up</Text>
@@ -150,7 +146,7 @@ export const AmoebaBonusView: React.FC<AmoebaBonusViewProps> = ({
           </Button>
         </View>
 
-        {/* 4 Sub-Metrics Bento Grid */}
+        {/* Sub-Metrics Bento Grid（口径 R7：分红仅来自服务收入，无处方/团队/股权等其它收益项） */}
         <View className="grid grid-cols-2 gap-2.5">
           {/* 1: Service Commission */}
           <View className="bg-surface-container-low rounded-lg p-2.5 flex flex-col justify-between space-y-1">
@@ -160,61 +156,66 @@ export const AmoebaBonusView: React.FC<AmoebaBonusViewProps> = ({
             </View>
             <View>
               <View className="text-on-surface text-[17px] font-extrabold">
-                ¥{stats.serviceCommission.toLocaleString()}
+                ¥{formatCents(stats.serviceCommissionCents)}
               </View>
               <View className="text-[11px] text-on-surface-variant flex items-center justify-between">
-                <Text>完成{stats.serviceTasksCount}单作业</Text>
+                <Text>本月完成作业服务</Text>
                 <Text className="text-primary font-bold">100%履约</Text>
               </View>
             </View>
           </View>
 
-          {/* 2: Prescription Dividend */}
+          {/* 2: Service Tasks Count */}
           <View className="bg-surface-container-low rounded-lg p-2.5 flex flex-col justify-between space-y-1">
             <View className="flex items-center justify-between text-on-surface-variant">
-              <Text className="text-xs font-semibold">处方销售分红</Text>
-              <Text className="material-symbols-outlined text-amber-700 text-[17px]">
-                prescriptions
-              </Text>
+              <Text className="text-xs font-semibold">本月服务单量</Text>
+              <Text className="material-symbols-outlined text-secondary text-[17px]">task_alt</Text>
             </View>
             <View>
               <View className="text-on-surface text-[17px] font-extrabold">
-                ¥{stats.prescriptionDividend.toLocaleString()}
+                {stats.serviceTasksCount} 单
               </View>
               <View className="text-[11px] text-on-surface-variant truncate">
-                30+核心品牌 · 7%~15%
+                已验收结算工单
               </View>
             </View>
           </View>
+        </View>
 
-          {/* 3: Team Apprenticeship Dividend */}
-          <View className="bg-surface-container-low rounded-lg p-2.5 flex flex-col justify-between space-y-1">
-            <View className="flex items-center justify-between text-on-surface-variant">
-              <Text className="text-xs font-semibold">团队/徒弟裂变</Text>
-              <Text className="material-symbols-outlined text-secondary text-[17px]">group_add</Text>
-            </View>
-            <View>
-              <View className="text-on-surface text-[17px] font-extrabold">
-                ¥{stats.teamReferralDividend.toLocaleString()}
-              </View>
-              <View className="text-[11px] text-on-surface-variant truncate">
-                带动3位青年农艺师入驻
-              </View>
-            </View>
+        {/* Reserved: 收益分项（R7 口径当前仅服务收入分成，以下能力预留·待接入，不伪造金额） */}
+        <View className="rounded-lg border border-dashed border-surface-container-high bg-surface-container-low/50 p-2.5 space-y-1.5">
+          <View className="flex items-center gap-1.5">
+            <Text className="material-symbols-outlined text-[15px] text-outline">
+              insights
+            </Text>
+            <Text className="text-[12px] font-bold text-on-surface-variant">
+              更多收益分项（预留 · 待接入）
+            </Text>
           </View>
-
-          {/* 4: Equity Pre-draw Pool */}
-          <View className="bg-surface-container-low rounded-lg p-2.5 flex flex-col justify-between space-y-1">
-            <View className="flex items-center justify-between text-on-surface-variant">
-              <Text className="text-xs font-semibold">年终股权预提</Text>
-              <Text className="material-symbols-outlined text-amber-800 text-[17px]">savings</Text>
-            </View>
-            <View>
-              <View className="text-on-surface text-[17px] font-extrabold">
-                ¥{stats.equityPreDraw.toLocaleString()}
+          <Text className="text-[10px] text-on-surface-variant leading-snug">
+            阿米巴分红口径以客户与财务确认的制度为准；以下分项当前不产数，接入后自动显示真值。
+          </Text>
+          <View className="grid grid-cols-2 gap-1.5 pt-0.5">
+            {(
+              [
+                ['开方分红', stats.prescriptionDividend],
+                ['推荐分红', stats.teamReferralDividend],
+                ['期权预支', stats.equityPreDraw],
+                ['分档系数', technician.incentiveMultiplier],
+              ] as const
+            ).map(([fallbackLabel, cap]) => (
+              <View
+                key={fallbackLabel}
+                className="flex items-center justify-between px-2 py-1.5 rounded bg-surface-container"
+              >
+                <Text className="text-[11px] text-on-surface">{cap?.label ?? fallbackLabel}</Text>
+                {cap?.enabled && cap?.value !== null ? (
+                  <Text className="text-[11px] font-bold text-primary">{String(cap.value)}</Text>
+                ) : (
+                  <Text className="text-[10px] font-bold text-on-surface-variant">待接入</Text>
+                )}
               </View>
-              <View className="text-[11px] text-outline">按期权池沉淀核算</View>
-            </View>
+            ))}
           </View>
         </View>
 
@@ -369,9 +370,9 @@ export const AmoebaBonusView: React.FC<AmoebaBonusViewProps> = ({
               </View>
               <View className="text-right shrink-0 pl-2">
                 <View className="text-primary-container text-sm font-extrabold leading-tight">
-                  +¥{tx.amount.toFixed(2)}
+                  +¥{formatCents(tx.amountCents)}
                 </View>
-                <View className="text-[10px] text-outline">{tx.time}</View>
+                <View className="text-[10px] text-outline">{formatRelativeTime(tx.time)}</View>
               </View>
             </View>
           ))}
@@ -385,12 +386,12 @@ export const AmoebaBonusView: React.FC<AmoebaBonusViewProps> = ({
             <Text className="bg-amber-200 text-amber-950 px-2 py-0.5 rounded-full text-[10px] font-bold">
               青年英才招募计划
             </Text>
-            <Text className="text-emerald-200 text-[11px] font-semibold">长效股权 · 师徒分红</Text>
+            <Text className="text-emerald-200 text-[11px] font-semibold">服务分成 · 长期合伙</Text>
           </View>
           <View>
             <Text className="text-sm font-bold leading-snug">推荐优秀农校毕业生 / 持证农艺师入驻</Text>
             <Text className="text-xs text-green-100 mt-1 leading-relaxed">
-              技术骨干与个人平台的无缝融合，让每一个新农人成为企业股东。每荐一名持证植保师享团队永久服务分润。
+              技术骨干与个人平台的无缝融合，让每一个新农人成为合伙人。推荐持证植保师入驻即可共享服务分成收益。
             </Text>
           </View>
           <View className="pt-1">

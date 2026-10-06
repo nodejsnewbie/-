@@ -41,9 +41,7 @@ export const QualificationAuditDrawer: React.FC<QualificationAuditDrawerProps> =
     licenseScanUrl:
       'https://lh3.googleusercontent.com/aida-public/AB6AXuAh1s8mg6ip3oI-qxhAlq0BtBFicBkSucGfFl8f743OT_FhzYRYiPJewdyFKMbj326rCsXGCTJXBtK5SXmP9Cl3mIiUDUhsMyVxCKifdxrCiOGQGJ9EgqB3x9veBWI-5f2303t_Q__PLfBZsmjsUcf4RGB5WKVmKtCN0QmvLYh8PDQFqDKAW1JqKiR6hSWbd4WNQDKI5AXae4tfDOzFM6oQer6rqVdSBD-G4sziw-H1fJahyb2yG-qj',
     licenseAuthority: '益阳市赫山区农业农村局',
-    ocrMatchRate: 98.4,
     nationalRegistryVerified: true,
-    identityFaceMatched: true,
     permittedScope: '限制使用农药以外的农药',
     validPeriod: '2024-09-10 至 2029-09-09',
     assignedAmoebaTeam: '益阳兰溪创客军团 (彭明辉导师组)',
@@ -147,9 +145,9 @@ export const QualificationAuditDrawer: React.FC<QualificationAuditDrawerProps> =
                 </span>
                 <span>法定农药经营许可证 (提交原件扫码件)</span>
               </h4>
-              <span className="text-secondary text-[12px] font-bold flex items-center gap-1">
-                <span className="material-symbols-outlined text-[16px]">smart_toy</span>
-                <span>AI OCR 字段自动比对完成 (合规可信度 {data.ocrMatchRate}%)</span>
+              <span className="text-on-surface-variant text-[12px] font-medium flex items-center gap-1">
+                <span className="material-symbols-outlined text-[16px]">how_to_reg</span>
+                <span>人工核验：审核员对照证件原图逐项判断（本期无 OCR / 人脸自动比对）</span>
               </span>
             </div>
 
@@ -174,40 +172,79 @@ export const QualificationAuditDrawer: React.FC<QualificationAuditDrawerProps> =
             </div>
           </div>
 
-          {/* OCR Extracted Data Matrix for Official Cross-Check */}
+          {/* Reserved: 自动核验能力（R5 本期纯人工审核，OCR / 人脸核身仅预留接口，不伪造结果） */}
+          <div className="p-3 rounded-xl bg-surface-container-low border border-dashed border-surface-container">
+            <div className="flex items-center gap-1.5 mb-2">
+              <span className="material-symbols-outlined text-outline text-[18px]">
+                auto_awesome
+              </span>
+              <h4 className="font-semibold text-on-surface-variant text-[13px]">
+                自动核验能力（预留接口）
+              </h4>
+              <span className="text-[11px] text-on-surface-variant/70">
+                本期为纯人工审核，以下能力接入后方显示结果，当前不作合规判定依据
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {(
+                [
+                  ['证件比对 (OCR)', data.ocrVerification],
+                  ['人脸核身', data.faceVerification],
+                ] as const
+              ).map(([fallbackLabel, cap]) => (
+                <div
+                  key={fallbackLabel}
+                  className="flex items-center justify-between p-2.5 bg-surface-container rounded-lg"
+                >
+                  <span className="text-[12px] text-on-surface">
+                    {cap?.label ?? fallbackLabel}
+                  </span>
+                  {cap?.enabled && cap?.value !== null ? (
+                    <span className="text-[12px] font-bold text-primary">{String(cap.value)}</span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant text-[11px] font-bold">
+                      待接入{cap?.reason ? ` · ${cap.reason}` : ''}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Applicant-submitted license elements for the auditor to verify manually */}
           <div className="space-y-1.5">
             <h4 className="font-semibold text-on-surface text-[13px] mb-2">
-              国家农业农村云监管接口校对结果:
+              证件要素核对（申请人提交材料，由审核员人工判断）
             </h4>
             <div className="grid grid-cols-2 gap-2 text-[13px]">
               <div className="p-3 bg-surface-container rounded-lg">
                 <span className="text-[11px] text-on-surface-variant block">
-                  许可证编号 (OCR读取)
+                  许可证编号（申请人提交）
                 </span>
                 <span className="font-mono font-bold text-primary">{data.licenseNumber}</span>
-                <span className="text-secondary text-[11px] block mt-0.5">
-                  ✔ 编号与省厅数据库登记一致
+                <span className="text-on-surface-variant text-[11px] block mt-0.5">
+                  请审核员对照省厅许可数据人工核对（监管接口本期未接入）
                 </span>
               </div>
               <div className="p-3 bg-surface-container rounded-lg">
                 <span className="text-[11px] text-on-surface-variant block">经营主体 / 持有人</span>
-                <span className="font-bold text-primary">{data.applicantName} (本人申报一致)</span>
-                <span className="text-secondary text-[11px] block mt-0.5">
-                  ✔ 实名身份人脸比对吻合
+                <span className="font-bold text-primary">{data.applicantName}</span>
+                <span className="text-on-surface-variant text-[11px] block mt-0.5">
+                  请人工核对持证人与申请人身份一致（本期无人脸核身）
                 </span>
               </div>
               <div className="p-3 bg-surface-container rounded-lg">
                 <span className="text-[11px] text-on-surface-variant block">许可经营范围</span>
                 <span className="font-bold text-on-surface">{data.permittedScope}</span>
-                <span className="text-secondary text-[11px] block mt-0.5">
-                  ✔ 符合民用植保飞防作业资质
+                <span className="text-on-surface-variant text-[11px] block mt-0.5">
+                  请人工判断许可范围是否覆盖本次作业类型
                 </span>
               </div>
               <div className="p-3 bg-surface-container rounded-lg">
                 <span className="text-[11px] text-on-surface-variant block">有效期限</span>
                 <span className="font-bold text-on-surface">{data.validPeriod}</span>
-                <span className="text-secondary text-[11px] block mt-0.5">
-                  ✔ 效期充足 (5年有效)
+                <span className="text-on-surface-variant text-[11px] block mt-0.5">
+                  请人工核对有效期是否覆盖当前作业日期
                 </span>
               </div>
             </div>
