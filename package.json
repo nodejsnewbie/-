@@ -26,6 +26,11 @@
   "engines": {
     "node": ">=20"
   },
+  "overrides": {
+    "weapp-tailwindcss": {
+      "tailwindcss": "~3.4.17"
+    }
+  },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "eslint": "^10.12.0",

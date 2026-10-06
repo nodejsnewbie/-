@@ -93,7 +93,7 @@
 | 单元 / 组件测试                     | Vitest                                        | ❌ 未接入 |
 | 端到端测试                          | Playwright                                    | ❌ 未接入 |
 | 接口 Mock                           | MSW                                           | ❌ 未接入 |
-| CI                                  | CNB 流水线（`.cnb.yml`）                      | ❌ 未配置 |
+| CI                                  | CNB 流水线（`.cnb.yml`）                      | ✅ 已配置（2026-10-04：main push → lint/build 门禁 → 后端镜像 → 自动部署至 linyuan-infra 共服，见 [DEPLOYMENT.md](DEPLOYMENT.md) 与 ADR-0003；测试框架仍未接入） |
 
 ## 4. 角色权限边界与决策权
 
@@ -212,7 +212,7 @@ docs/             # 0_index / 1_common / 2_pc_* / 9_data_dict / ui/demos
 
 ### 6.3 分支与提交
 
-主干 `main` 保持可发布；`feat/*`、`fix/*`、`refactor/*`。禁止直接推送 `main`；必须经 PR + CI 门禁 + 至少 1 人评审。
+主干 `main` 保持可发布；`feat/*`、`fix/*`、`refactor/*`、`docs/*`。**一人项目适配（ADR-0001）**：业务改动一律走分支，合并前执行本地门禁 + [`COLLABORATION.md`](COLLABORATION.md) 附录 A 自评审清单（替代"PR + 至少 1 人评审"）；`docs/` 与 `chore:` 小改可直接进 `main`。CNB 流水线接入后，门禁上移 CI，自评审清单转为 CI 配置的验收依据。
 
 ### 6.4 核心状态机（验收依据）
 
@@ -287,4 +287,4 @@ pending ──approve──▶ approved ──▶ 技师 dispatchStatus = active
 | C 端 · 用户端小程序       | ❌（无后台界面） | ❌ Mock  | ✅ 界面已并入 `apps/user`（自 `E:\repo\zymall`，2026-10 由 H5 转 Taro 小程序）；9 条路由迁入 NestJS `modules/mall`，数据为种子 Mock |
 | AI 智能代理层             | —                | ❌ Mock  | ✅ `services/ai`（FastAPI + LangChain）已建成：REST 层真实存在且可测（pytest 5 项），但代理数据全部来自统一后端的种子 Mock，且 LLM 密钥未配置 |
 
-> **结论口径**：当前仓库完成的是**企业后台与 C 端用户端（小程序）的界面与交互框架**，统一后端已聚合三套原型的 41 条路由（数据落 Prisma/SQLite，但内容全部为种子 Mock），AI 智能代理层（services/ai）已建成并接入 6 个平台接口作为工具，**尚无任何一项业务能力具备真实后端、真实鉴权或真实监管对接**。任何对外汇报必须沿用此口径，不得表述为「功能已上线」。
+> **结论口径**：当前仓库完成的是**企业后台与 C 端用户端（小程序）的界面与交互框架**，统一后端已聚合三套原型的 41 条路由（数据落 Prisma，开发/生产已统一 PostgreSQL，内容全部为种子 Mock），AI 智能代理层（services/ai）已建成并接入 6 个平台接口作为工具，**尚无任何一项业务能力具备真实后端、真实鉴权或真实监管对接**。任何对外汇报必须沿用此口径，不得表述为「功能已上线」。

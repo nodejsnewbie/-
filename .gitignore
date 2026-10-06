@@ -24,3 +24,5 @@ __pycache__/
 
 # SWC 构建缓存（apps/technician）
 .swc/
+# baton 交接记录（本地草稿，不入库）
+.baton/

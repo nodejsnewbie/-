@@ -1,0 +1,39 @@
+# =============================================================================
+# 华农智服 · 云端编排（宿主机 1.14.155.197 → /opt/hnhall）
+# 由 .cnb.yml 每次 deploy 前 scp 同步；镜像只 pull 不 build
+#
+# 数据库（2026-10-04 起）：linyuan-infra 共享 PostgreSQL（shared_postgres 容器）
+#   - 通过外部网络 shared-infra-net 接入（由 /opt/linyuan-infra/shared-infra 编排创建）
+#   - 一库一账号（R8）：库 hnhall / 账号 hnhall / 口令在宿主机 /opt/hnhall/.env 的 HNHALL_DB_PASSWORD
+#   - 无本地数据库容器：应用重建/迁移不丢数据（卷在 shared-infra 侧统一备份）
+#
+# 约定（linyuan-infra/docs/deployment-architecture.md §8）：
+#   - 端口只绑定 127.0.0.1，公网入口一律走宿主机 Nginx（hnhall.linyuan.maimaioo.top）
+#   - 生产库不播种种子数据（红线 R4）；建表由容器启动时的 prisma migrate deploy 完成
+# =============================================================================
+
+services:
+  api:
+    image: docker.cnb.cool/yahveyeye/hnhall/api:latest
+    container_name: hnhall_api
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:38000:3000"
+    environment:
+      # 口令来自 /opt/hnhall/.env（compose 自动读取同目录 .env 做变量替换）
+      DATABASE_URL: postgres://hnhall:${HNHALL_DB_PASSWORD:?在 /opt/hnhall/.env 配置 HNHALL_DB_PASSWORD}@shared-postgres:5432/hnhall
+      PORT: "3000"
+    networks:
+      - default
+      - shared-infra-net
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+networks:
+  shared-infra-net:
+    external: true
+    name: shared-infra-net
